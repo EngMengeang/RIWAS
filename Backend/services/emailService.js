@@ -12,13 +12,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("Transporter verification failed:", error);
-  } else {
-    console.log("Transporter is ready to send emails");
-  }
-});
+// Only verify transporter in production, skip in development
+if (process.env.NODE_ENV === 'production') {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error("Transporter verification failed:", error);
+    } else {
+      console.log("Transporter is ready to send emails");
+    }
+  });
+} else {
+  console.log("Email service configured (verification skipped in development)");
+}
 
 
 

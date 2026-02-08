@@ -16,7 +16,7 @@ const HomeContent = () => {
             </p>
 
             <Link to="/about" className="px-6 py-3 mr-4 mt-4 font-semibold border-2 border-[#03EF62] rounded-[25px] inline-block">Browse jobs</Link>
-            <Link to="/about" className="px-6 py-3 mt-4 font-semibold bg-[#03EF62] rounded-[25px] inline-block">Get Started</Link>
+            <Link to="/signup" className="px-6 py-3 mt-4 font-semibold bg-[#03EF62] rounded-[25px] inline-block">Get Started</Link>
         </div>
        
         <div className='w-[50%]'>

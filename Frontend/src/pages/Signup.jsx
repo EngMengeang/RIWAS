@@ -60,7 +60,7 @@ const SignUp = () => {
       {/* Left Section */}
       <div className="flex-1 flex flex-col m-2">
         <div className="p-4">
-          <Link to="/login">
+          <Link to="/">
             <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base font-sans hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
               <IoIosArrowBack size={20} /> Back
             </button>
