@@ -6,11 +6,25 @@ import compression from "compression";
 import dotenv from "dotenv";
 import { sequelize } from "./config/database.js";
 
-// Routes
+// Routes imports
 import authRoutes from "./routes/authRoutes.js";
-// import userRoutes from "./routes/userRoutes.js"
+import userRoutes from "./routes/userRoutes.js"
+import profileRoutes from "./routes/profileRoutes.js"
+import jobpostingRoutes from "./routes/jobpostingRoutes.js"
+import jobapplicationRoutes from "./routes/jobapplicationRoutes.js"
+import interviewRoutes from "./routes/interviewRoutes.js"
+//  update routes
+import applicationstatushistoryRoutes from "./routes/applicationstatushistoryRoutes.js";
+import applicationworkflowRoutes from "./routes/applicationworkflowRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import matrixscoreRoutes from "./routes/matrixscoreRoutes.js";
+import skillRoutes from "./routes/skillRoutes.js";
+import userskillRoutes from "./routes/userskillRoutes.js";
+// added new routes
 
-// Middleware
+import scoreattributeRoutes from "./routes/scoreattributeRoutes.js";
+import scoretemplateRoutes from "./routes/scoretemplateRoutes.js";
+// Middleware imports
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { requestValidator } from "./middlewares/requestValidator.js";
 
@@ -25,11 +39,14 @@ const ENV = process.env.NODE_ENV || "development";
 // --------------------
 app.use(helmet()); // Adds HTTP headers to secure your app
 app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+  // cors({
+  //   origin: process.env.CLIENT_URL || "http://localhost:3000",
    
-    credentials: true,
-  })
+  //   credentials: true,
+  //  })   
+  //  -- old version specific origin
+  
+  cors() // Allow all origins 
 );
 
 // --------------------
@@ -60,7 +77,22 @@ app.get("/health", (req, res) => {
 // API Routes
 // --------------------
 app.use("/api/auth", authRoutes);
-// app.use("/api/users", userRoutes); // uncomment when ready
+app.use("/api/users", userRoutes); 
+app.use("/api/profiles", profileRoutes);
+app.use("/api/jobpostings", jobpostingRoutes);
+app.use("/api/jobapplications", jobapplicationRoutes);
+app.use("/api/interviews", interviewRoutes);
+
+// Updated new 
+app.use("/api/workflows", applicationworkflowRoutes);
+app.use("/api/status-history", applicationstatushistoryRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/skills", skillRoutes);
+app.use("/api/user-skills", userskillRoutes);
+app.use("/api/matrix-scores", matrixscoreRoutes);
+// update 2 
+app.use("/api/attributes", scoreattributeRoutes);
+app.use("/api/templates", scoretemplateRoutes);
 
 // --------------------
 // 404 Handler
@@ -96,7 +128,7 @@ app.use(errorHandler);
 
     // Start server
     const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} [${ENV}]`);
+      console.log(`Server running on http://localhost:${PORT} [${ENV}]`);
     });
 
     // Graceful shutdown

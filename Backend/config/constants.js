@@ -1,23 +1,23 @@
 
 export const USER_ROLES = {
-  RECRUITER: "RECRUITER",
-  CANDIDATE: "CANDIDATE",
+  RECRUITER: "recruiter",
+  CANDIDATE: "candidate",
 }
 
 export const JOB_STATUS = {
-  DRAFT: "DRAFT",
-  PUBLISHED: "PUBLISHED",
-  CLOSED: "CLOSED",
+  DRAFT: "draft",
+  PUBLISHED: "published",
+  CLOSED: "closed",
 }
 
 
 export const APPLICATION_STATUS = {
-  APPLIED: "APPLIED",
-  REVIEW: "REVIEW",
-  INTERVIEW: "INTERVIEW",
-  OFFER: "OFFER",
-  REJECTED: "REJECTED",
-  HIRED: "HIRED",
+  APPLIED: "applied",
+  REVIEW: "review",
+  INTERVIEW: "interview",
+  OFFER: "offer",
+  REJECTED: "rejected",
+  HIRED: "hired",
 }
 
 export const JOB_TYPE = {
@@ -30,13 +30,14 @@ export const JOB_TYPE = {
 
 
 export const WORKFLOW_STEP = {
-  SCREENING: "SCREENING",
-  INTERVIEW: "INTERVIEW",
-  ASSESSMENT: "ASSESSMENT",
-  REFERENCES: "REFERENCES",
-  DECISION: "DECISION",
-  JOB_OFFER: "JOB_OFFER",
-  SHORTLIST: "SHORTLIST",
+  SCREENING: "screening",
+  INTERVIEW: "interview",
+  ASSESSMENT: "assessment",
+  REFERENCES: "references",
+  DECISION: "decision",
+  JOB_OFFER: "job_offer",
+  SHORTLIST: "shortlist",
+  FEEDBACK_PROVIDED: "feedback_provided",
 }
 
 
@@ -47,4 +48,11 @@ export const NOTIFICATION_TYPES = {
   JOB_PUBLISHED: "job_published",
   JOB_CLOSED: "job_closed",
   NEW_MESSAGE: "new_message",
+}
+
+export const INTERVIEW_STATUS = {
+  SCHEDULED: "scheduled",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+  RESCHEDULED: "rescheduled",
 }

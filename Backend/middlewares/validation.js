@@ -1,5 +1,5 @@
 import Joi from "joi"
-
+import { JOB_TYPE } from "../config/constants.js"
 export const validateRequest = (schema) => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
@@ -43,11 +43,40 @@ export const createJobSchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),
   location: Joi.string().required(),
-  jobType: Joi.string().valid("full-time", "part-time", "contract", "freelance"),
-  requirements: Joi.array().items(Joi.string()),
+
+  jobType: Joi.string()
+    .valid(...Object.values(JOB_TYPE))
+    .required(),
+
+  requirements: Joi.array().items(Joi.string()).optional(),
+
   salary: Joi.object({
-    min: Joi.number(),
-    max: Joi.number(),
-    currency: Joi.string(),
-  }),
+    min: Joi.number().optional(),
+    max: Joi.number().optional(),
+    currency: Joi.string().optional(),
+  }).optional(),
 })
+
+export const updateJobSchema = Joi.object({
+  title: Joi.string().optional(),
+  description: Joi.string().optional(),
+  location: Joi.string().optional(),
+
+  status: Joi.string()
+    .valid("draft", "published", "closed")
+    .optional(),
+
+  jobType: Joi.string()
+    .valid(...Object.values(JOB_TYPE))
+    .optional(),
+
+  applicationDeadline: Joi.date().iso().optional(),
+
+  requirements: Joi.array().items(Joi.string()).optional(),
+
+  salary: Joi.object({
+    min: Joi.number().optional(),
+    max: Joi.number().optional(),
+    currency: Joi.string().optional(),
+  }).optional(),
+}).min(1)

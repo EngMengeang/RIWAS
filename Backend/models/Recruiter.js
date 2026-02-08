@@ -1,10 +1,9 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
-import { Profile } from "./Profile.js";
 
 export const Recruiter = sequelize.define("Recruiter", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  profileId: { type: DataTypes.UUID, allowNull: false, unique: true, references: { model: Profile, key: "id" } , onDelete: "CASCADE" , onUpdate: "CASCADE"},
+  profile_id: { type: DataTypes.UUID, allowNull: false, unique: true, references: { model: "Profiles", key: "id" } , onDelete: "CASCADE" , onUpdate: "CASCADE"},
   department: { type: DataTypes.STRING },
   positionTitle: { type: DataTypes.STRING },
   workEmail: { type: DataTypes.STRING },

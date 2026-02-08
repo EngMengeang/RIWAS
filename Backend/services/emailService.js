@@ -3,29 +3,42 @@ import dotenv from "dotenv"
 
 dotenv.config()
 
+
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
-})
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Transporter verification failed:", error);
+  } else {
+    console.log("Transporter is ready to send emails");
+  }
+});
+
+
+
 
 export const sendEmail = async (to, subject, html) => {
+  console.log("Sending email to:", to);
   try {
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to,
       subject,
       html,
-    })
-    console.log("Email sent:", info.response)
-    return info
+    });
+    console.log("Email sent successfully:", info.response);
+    return info;
   } catch (error) {
-    console.error("Email send error:", error)
-    throw error
+    console.error("Email send error:", error);
+    throw error;
   }
-}
+};
 
 export const sendWelcomeEmail = async (user) => {
   const html = `
@@ -48,81 +61,46 @@ export const sendInterviewScheduledEmail = async (user, interview) => {
   return sendEmail(user.email, "Interview Scheduled", html)
 }
 
-
 export const sendApplicationStatusEmail = async (user, application, status) => {
+  if (!user.email) {
+    console.warn(`User ${user.id} has no email!`);
+    return;
+  }
+
   let subject = "Application Status Update";
-  let message = `<p>Dear ${user.firstName},</p>`;
+  let message = `<p>Dear ${user.firstName || user.fullName},</p>`;
 
   switch (status) {
     case "applied":
       subject = "Application Received";
-      message += `
-        <p>Thank you for applying for the position of <strong>${application.job.title}</strong>.</p>
-        <p>Our recruitment team will review your application and get back to you shortly.</p>
-      `;
+      message += `<p>Thank you for applying for <strong>${application.job.title}</strong>.</p>`;
       break;
-
     case "screening":
       subject = "Application Under Review";
-      message += `
-        <p>Your application for <strong>${application.job.title}</strong> is currently under screening.</p>
-        <p>We will contact you if you are shortlisted for the next step.</p>
-      `;
+      message += `<p>Your application for <strong>${application.job.title}</strong> is under review.</p>`;
       break;
-
     case "interview":
       subject = "Interview Scheduled";
-      message += `
-        <p>Good news! You have been shortlisted for an interview for <strong>${application.job.title}</strong>.</p>
-        <p><strong>Scheduled Date:</strong> ${new Date(application.interviewScheduledAt || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Phnom_Penh" })}</p>
-        <p>Our recruiter will contact you with further details.</p>
-      `;
+      message += `<p>Good news! You have been shortlisted for an interview for <strong>${application.job.title}</strong>.</p>`;
+      if (application.interviewScheduledAt) {
+        message += `<p><strong>Interview Date:</strong> ${new Date(application.interviewScheduledAt).toLocaleString("en-US", { timeZone: "Asia/Phnom_Penh" })}</p>`;
+      }
       break;
-
-    case "assessment":
-      subject = "Assessment Invitation";
-      message += `
-        <p>You have been invited for an assessment for the position of <strong>${application.job.title}</strong>.</p>
-        <p>Please check your candidate dashboard for instructions.</p>
-      `;
-      break;
-
-    case "reference":
-      subject = "Reference Check";
-      message += `
-        <p>We are currently performing reference checks for your application for <strong>${application.job.title}</strong>.</p>
-      `;
-      break;
-
     case "decision":
       subject = application.rejectionReason ? "Application Rejected" : "Application Decision";
       message += application.rejectionReason
-        ? `<p>We regret to inform you that your application for <strong>${application.job.title}</strong> has not been successful.</p>
+        ? `<p>We regret to inform you that your application for <strong>${application.job.title}</strong> was not successful.</p>
            <p><strong>Reason:</strong> ${application.rejectionReason}</p>`
-        : `<p>Your application for <strong>${application.job.title}</strong> has been reviewed. Please check your dashboard for the decision.</p>`;
+        : `<p>Your application for <strong>${application.job.title}</strong> has been reviewed. Please check your dashboard for details.</p>`;
       break;
-
-    case "joboffer":
-      subject = "Job Offer";
-      message += `
-        <p>Congratulations! You have received a job offer for <strong>${application.job.title}</strong>.</p>
-        <p>Please check your candidate dashboard for offer details.</p>
-      `;
-      break;
-
     default:
-      message += `<p>Your application status has been updated to: <strong>${status}</strong>.</p>`;
+      message += `<p>Your application status has been updated to <strong>${status}</strong>.</p>`;
   }
 
-  message += `
-    <p>Thank you for using Interview Platform.</p>
-    <p>Kind regards,<br/>
-    Human Resources Department</p>
-  `;
+  message += `<p>Kind regards,<br/>Human Resources Department</p>`;
 
   return sendEmail(user.email, subject, message);
 };
-
 
 
 // Send notification after submit application 

@@ -1,6 +1,5 @@
 import { sequelize } from "../config/database.js";
 
-// Import all models
 import { User } from "./User.js";
 import { Profile } from "./Profile.js";
 import { Candidate } from "./Candidate.js";
@@ -23,7 +22,7 @@ import { initializeAssociations } from "./associations.js";
 // Initialize all associations
 initializeAssociations();
 
-// Export everything
+
 export {
   sequelize,
   User,
