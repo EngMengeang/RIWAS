@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import SignUp from "./pages/Signup";
 import Login from "./pages/Login";
+import InputResume from "./pages/InputResume";
 function App() {
   return (
     <BrowserRouter>
