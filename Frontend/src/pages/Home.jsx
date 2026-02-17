@@ -9,7 +9,7 @@ const Home = () => {
     <div className="flex-col box-border w-screen h-screen">
         <HomeNav />
         <HomeContent/>
-        <Features />  
+        <Features />
         <Instruction />
         <Footer />
     </div>
