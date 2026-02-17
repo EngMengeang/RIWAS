@@ -77,7 +77,7 @@ const SignUp = () => {
 
       {/* Right Section */}
       <div className="flex-1 flex flex-col items-center border-l border-gray-200 shadow-lg px-8 py-8">
-        <p className="mt-12 mb-8 font-semibold text-2xl">Create an Account</p>
+        <p className="mt-12 mb-8 font-semibold text-2xl">Create an account</p>
 
         <div className="flex-1 w-full max-w-[450px] flex flex-col">
           <form className="w-full" onSubmit={handleSubmit}>

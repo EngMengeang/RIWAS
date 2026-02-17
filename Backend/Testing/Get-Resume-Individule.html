@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Resume AI Results</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f6fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2f3640;
+    }
+
+    #resumesContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .resume {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      padding: 25px 30px;
+      transition: transform 0.2s;
+    }
+
+    .resume:hover {
+      transform: translateY(-3px);
+    }
+
+    .resume h2 {
+      margin-top: 0;
+      font-size: 22px;
+      color: #1e272e;
+      border-bottom: 2px solid #dcdde1;
+      padding-bottom: 6px;
+    }
+
+    .section {
+      margin-top: 15px;
+    }
+
+    .section h3 {
+      font-size: 16px;
+      margin-bottom: 6px;
+      color: #40739e;
+    }
+
+    .section p {
+      margin: 2px 0 8px 0;
+      color: #2f3640;
+    }
+
+    .section ul {
+      list-style-type: disc;
+      margin: 0;
+      padding-left: 20px;
+      color: #2f3640;
+    }
+
+    .section ul li {
+      margin-bottom: 4px;
+    }
+
+    pre {
+      background-color: #f1f2f6;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+      color: #2f3640;
+    }
+
+    .token-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .token-container input {
+      padding: 8px 10px;
+      font-size: 14px;
+      width: 400px;
+      border-radius: 6px;
+      border: 1px solid #dcdde1;
+      margin-right: 6px;
+    }
+
+    .token-container button {
+      padding: 8px 14px;
+      font-size: 14px;
+      background-color: #40739e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .token-container button:hover {
+      background-color: #2f3640;
+    }
+  </style>
+</head>
+<body>
+  <h1>User Resume AI Analysis</h1>
+
+  <div class="token-container">
+    <input type="text" id="tokenInput" placeholder="Paste your Bearer token here">
+    <button onclick="fetchResumes()">Load Resumes</button>
+  </div>
+
+  <div id="resumesContainer"></div>
+
+  <script>
+    function parseResumeRaw(raw) {
+      if (!raw) return {};
+      let cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+      try {
+        return JSON.parse(cleaned);
+      } catch (err) {
+        console.warn("Failed to parse raw resume JSON:", err);
+        return { raw };
+      }
+    }
+
+    function arrayToList(arr) {
+      if (!arr || arr.length === 0) return "<p>No data</p>";
+      return "<ul>" + arr.map(item => 
+        `<li>${typeof item === 'object' ? Object.entries(item).map(([k,v])=>`${k}: ${v || 'N/A'}`).join(", ") : item}</li>`
+      ).join("") + "</ul>";
+    }
+
+    async function fetchResumes() {
+      const token = document.getElementById('tokenInput').value.trim();
+      if (!token) {
+        alert("Please enter your token");
+        return;
+      }
+
+      const container = document.getElementById("resumesContainer");
+      container.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const response = await fetch("http://localhost:5000/api/resumes", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+        const data = await response.json();
+        const resumes = data.data;
+
+        if (!resumes || resumes.length === 0) {
+          container.innerHTML = "<p>No resumes found.</p>";
+          return;
+        }
+
+        container.innerHTML = "";
+
+        resumes.forEach((resume, index) => {
+          const ai = resume.ai_analysis?.raw 
+                     ? parseResumeRaw(resume.ai_analysis.raw) 
+                     : resume.ai_analysis || {};
+
+          const resumeDiv = document.createElement("div");
+          resumeDiv.classList.add("resume");
+
+          resumeDiv.innerHTML = `
+            <h2>Resume #${index + 1} (Uploaded: ${new Date(resume.uploaded_at).toLocaleDateString()})</h2>
+
+            <div class="section">
+              <h3>Personal Information</h3>
+              <pre>${JSON.stringify(ai.personalInformation || {}, null, 2)}</pre>
+            </div>
+
+            <div class="section">
+              <h3>Professional Summary</h3>
+              <p>${ai.professionalSummary || "No data"}</p>
+            </div>
+
+            <div class="section">
+              <h3>Education</h3>
+              ${arrayToList(ai.education)}
+            </div>
+
+            <div class="section">
+              <h3>Achievements</h3>
+              ${arrayToList(ai.achievements)}
+            </div>
+
+            <div class="section">
+              <h3>Experience</h3>
+              ${arrayToList(ai.experience)}
+            </div>
+
+            <div class="section">
+              <h3>Projects</h3>
+              ${arrayToList(ai.projects)}
+            </div>
+
+            <div class="section">
+              <h3>Skills</h3>
+              <pre>${JSON.stringify(ai.skills || {}, null, 2)}</pre>
+            </div>
+
+            <div class="section">
+              <h3>Certifications</h3>
+              ${arrayToList(ai.certifications)}
+            </div>
+
+            <div class="section">
+              <h3>Extracurricular Activities</h3>
+              ${arrayToList(ai.extracurricular)}
+            </div>
+
+            <div class="section">
+              <h3>Languages</h3>
+              ${arrayToList(ai.languages)}
+            </div>
+
+            <div class="section">
+              <h3>Raw Text</h3>
+              <pre>${ai.raw || ""}</pre>
+            </div>
+          `;
+
+          container.appendChild(resumeDiv);
+        });
+
+      } catch (err) {
+        container.innerHTML = `<p style="color:red;">Failed to load resumes: ${err.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

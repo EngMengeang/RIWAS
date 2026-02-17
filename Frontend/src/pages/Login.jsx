@@ -9,24 +9,48 @@ import { signIn } from "../server/authAPI";
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const res = await signIn(formData);
+      
+      // Validate response data
+      if (!res.data) {
+        throw new Error("No data received from server");
+      }
+
       const { user, accessToken, refreshToken } = res.data;
 
+      // Validate required fields
+      if (!user || !accessToken || !refreshToken) {
+        throw new Error("Invalid response data from server");
+      }
+
+      // Store user data and tokens
       localStorage.setItem("currentUser", JSON.stringify(user));
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
       alert(`Welcome back, ${user.firstName}!`);
-      user.role === "RECRUITER" ? navigate("/jobpost") : navigate("/viewjob");
+      console.log("User data:", user);
+
+      localStorage.setItem("id", user.id)
+      
+      
+      // Navigate based on role
+      user.role === "recruiter" ? navigate("/job-listing") : navigate("/view-jobs");
     } catch (err) {
-      alert(err.response?.data?.error || "❌ Login failed");
+      console.error("Login error:", err);
+      const errorMessage = err.response?.data?.error || err.message || "❌ Login failed";
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,7 +62,7 @@ const Login = () => {
       {/* Left Section */}
       <div className="flex-1 flex flex-col m-2">
         <div className="p-4">
-          <Link to="/">
+          <Link to="/admin-home">
             <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base font-sans hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
               <IoIosArrowBack size={20} /> Back
             </button>
@@ -102,9 +126,10 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full py-3 bg-green-500 text-white rounded-lg font-semibold text-base hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(66,133,244,0.3)] transition-all"
+              disabled={loading}
+              className="w-full py-3 bg-green-500 text-white rounded-lg font-semibold text-base hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(66,133,244,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? "Signing in..." : "Continue"}
             </button>
           </form>
 
