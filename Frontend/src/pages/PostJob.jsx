@@ -1,9 +1,90 @@
 import React from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SideBar from "../components/SideBar";
 
 export default function PostJob() {
-  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    title: "",
+    department: "",
+    description: "",
+    location: "",
+    jobType: "",
+    status: "",
+    requirements: "",
+    minSalary: "",
+    maxSalary: "",
+    postedDate: "",
+    deadline: ""
+  });
+
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const jobData = {
+      title: form.title,
+      description: form.description,
+      location: form.location,
+      jobType: form.jobType,
+
+      // convert string → array
+      requirements: form.requirements.split(",").map(r => r.trim()).filter(r => r),
+
+      salary: {
+        min: Number(form.minSalary),
+        max: Number(form.maxSalary),
+        currency: "USD"
+      }
+    };
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      const res = await fetch("http://localhost:5000/api/jobpostings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      const data = await res.json();
+      console.log(data);
+      
+      if (res.ok) {
+        alert("Job created successfully!");
+        setForm({
+          title: "",
+          department: "",
+          description: "",
+          location: "",
+          jobType: "",
+          status: "",
+          requirements: "",
+          minSalary: "",
+          maxSalary: "",
+          postedDate: "",
+          deadline: ""
+        });
+      } else {
+        alert(data.error || "Failed to create job");
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+
 
   // Consistent Styling variables
   const labelStyle = "block text-sm font-semibold text-slate-600 mb-2";
@@ -27,7 +108,7 @@ export default function PostJob() {
           </button>
         </div>
 
-        <form className="w-full">
+        <form className="w-full" onSubmit={handleSubmit}>
 
           {/* Section 1: Basic Information */}
           <section className={cardStyle}>
@@ -35,28 +116,30 @@ export default function PostJob() {
             <div className="grid grid-cols-3 gap-8">
               <div className="col-span-1">
                 <label className={labelStyle}>Job Title</label>
-                <input type="text" placeholder="e.g, Senior Web Developer" className={inputStyle} />
+                <input type="text" name="title" value={form.title} onChange={handleChange} placeholder="e.g, Senior Web Developer" className={inputStyle} />
               </div>
               <div className="col-span-1">
                 <label className={labelStyle}>Department</label>
-                <input type="text" placeholder="e.g, Information Technology" className={inputStyle} />
+                <input type="text" name="department" value={form.department} onChange={handleChange} placeholder="e.g, Information Technology" className={inputStyle} />
               </div>
               <div className="col-span-1">
                 <label className={labelStyle}>Job Type</label>
-                <select className={inputStyle}>
+                <select name="jobType" value={form.jobType} onChange={handleChange} className={inputStyle}>
                   <option value="">Select Job Type</option>
-                  <option value="full-time">Full-time</option>
-                  <option value="part-time">Part-time</option>
+                  <option value="full_time">Full-time</option>
+                  <option value="part_time">Part-time</option>
+                  <option value="contract">Contract</option>
+                  <option value="intern">Intern</option>
                   <option value="remote">Remote</option>
                 </select>
               </div>
               <div className="col-span-1">
                 <label className={labelStyle}>Min Salary</label>
-                <input type="text" placeholder="e.g, 500$" className={inputStyle} />
+                <input type="text" name="minSalary" value={form.minSalary} onChange={handleChange} placeholder="e.g, 500$" className={inputStyle} />
               </div>
               <div className="col-span-1">
                 <label className={labelStyle}>Max Salary</label>
-                <input type="text" placeholder="e.g, 2000$" className={inputStyle} />
+                <input type="text" name="maxSalary" value={form.maxSalary} onChange={handleChange} placeholder="e.g, 2000$" className={inputStyle} />
               </div>
             </div>
           </section>
@@ -67,15 +150,15 @@ export default function PostJob() {
             <div className="grid grid-cols-3 gap-8">
               <div>
                 <label className={labelStyle}>Posted Date</label>
-                <input type="text" defaultValue="20/12/2025" className={inputStyle} />
+                <input type="text" name="postedDate" value={form.postedDate} onChange={handleChange} className={inputStyle} />
               </div>
               <div>
                 <label className={labelStyle}>Application Deadline</label>
-                <input type="text" placeholder="dd/mm/yy" className={inputStyle} />
+                <input type="text" name="deadline" value={form.deadline} onChange={handleChange} placeholder="dd/mm/yy" className={inputStyle} />
               </div>
               <div>
                 <label className={labelStyle}>Location</label>
-                <input type="text" placeholder="e.g, Cambodia, Remote" className={inputStyle} />
+                <input type="text" name="location" value={form.location} onChange={handleChange} placeholder="e.g, Cambodia, Remote" className={inputStyle} />
               </div>
             </div>
           </section>
@@ -87,6 +170,9 @@ export default function PostJob() {
               <div>
                 <label className={labelStyle}>Job Description</label>
                 <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
                   rows="5"
                   placeholder="e.g, Describe the role, what candidate will do..."
                   className={inputStyle}
@@ -95,6 +181,9 @@ export default function PostJob() {
               <div>
                 <label className={labelStyle}>Requirements</label>
                 <textarea
+                  name="requirements"
+                  value={form.requirements}
+                  onChange={handleChange}
                   rows="5"
                   placeholder="e.g, Certification, Year of Experiences"
                   className={inputStyle}
