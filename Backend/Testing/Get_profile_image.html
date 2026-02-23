@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile Avatar Test (With Token)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Profile Avatar Test (JWT)</h2>
+
+  <button onclick="loadProfile()">Load Profile</button>
+
+  <div>
+    <p><strong>Headline:</strong> <span id="headline"></span></p>
+    <p><strong>About:</strong> <span id="about"></span></p>
+    <p><strong>Experience:</strong><span id="experience"></span></p>
+    <p><strong>Git hub Link :</strong><span id="github"></span></p>
+    <p><strong>Avatar:</strong></p>
+
+    <img id="avatar" />
+  </div>
+
+  <script>
+    async function loadProfile() {
+      try {
+        const userId = "458c4028-f39c-4dc7-a368-4979dfa24efd";
+
+        // 🔐 PASTE YOUR TOKEN HERE
+        // const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwMDMyOTZhLWIyZTYtNDQyOC05ZmNkLTg1NjBmM2FhNDUyZiIsInJvbGUiOiJjYW5kaWRhdGUiLCJpYXQiOjE3NjkxODQ1NjcsImV4cCI6MTc2OTc4OTM2N30.K2TcLsAbRubGcqN8Zkf67NQ_tBPzT0A6JV0-8ELYTxY";
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFhNmE3YzVmLTg3NGItNDIxMy04YmFmLTNkZWNkY2JmYmZkOCIsInJvbGUiOiJjYW5kaWRhdGUiLCJpYXQiOjE3Njk3NDcyODUsImV4cCI6MTc3MDM1MjA4NX0.lW7f7znq3_CWUAVP9uxP6s3Qh-f1bRrtvIVLItls4jk";
+        const res = await fetch(`http://localhost:5000/api/profiles/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const json = await res.json();
+        console.log("PROFILE RESPONSE:", json);
+
+        const profile = json.data;
+
+        document.getElementById("headline").textContent = profile.headline || "-";
+        document.getElementById("about").textContent = profile.about || "-";
+        document.getElementById("experience").textContent = profile.experience || "-";
+        
+        document.getElementById("github").textContent = profile.github || "-";
+        
+
+        if (profile.avatarUrl) {
+          document.getElementById("avatar").src = profile.avatarUrl;
+        } else {
+          document.getElementById("avatar").alt = "Avatar is null";
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load profile");
+      }
+    }
+  </script>
+
+</body>
+</html>
