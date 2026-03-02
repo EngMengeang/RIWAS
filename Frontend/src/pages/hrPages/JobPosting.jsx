@@ -1,45 +1,59 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SideBar from "../../components/SideBar";
 
 export default function JobList() {
   const navigate = useNavigate();
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const jobs = [
-    {
-      id: 1,
-      title: "Senior UI/UX Designer",
-      company: "Amazon",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
-      location: "Mumbai, India",
-      type: "Part-Time",
-      salary: "$120/hr",
-      posted: "5 days ago",
-      applications: 48 
-    },
-    {
-      id: 2,
-      title: "Graphic Designer",
-      company: "Google",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Logo.svg",
-      location: "Kochi, India",
-      type: "Part-Time",
-      salary: "$150-220k",
-      posted: "30 days ago",
-      applications: 124
-    },
-    {
-      id: 3,
-      title: "Senior Motion Designer",
-      company: "Dribbble",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/3/32/Dribbble_logo.svg",
-      location: "Chennai, India",
-      type: "Contract",
-      salary: "$85/hr",
-      posted: "10 days ago",
-      applications: 12
-    },
-  ];
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("accessToken");
+        
+        const response = await fetch('http://localhost:5000/api/jobpostings/', {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` })
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch job postings');
+        }
+        
+        const responseData = await response.json();
+        console.log('API Response:', responseData);
+        // Extract jobs array from response
+        setJobs(responseData.data || []);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching jobs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Helper function to format salary
+  const formatSalary = (salary) => {
+    if (!salary) return 'N/A';
+    if (typeof salary === 'string') return salary;
+    if (typeof salary === 'object') {
+      const { min, max, currency } = salary;
+      if (min && max) {
+        return `${currency || '$'}${min}-${max}k`;
+      }
+      return `${currency || '$'}${min || max || 'N/A'}`;
+    }
+    return 'N/A';
+  };
 
   return (
     <div className="flex min-h-screen bg-[#FDFDFD]">
@@ -48,7 +62,7 @@ export default function JobList() {
       <main className="flex-1 ml-[227px] p-8">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-8">
-          <div>
+         <div>
             <h1 className="text-3xl font-bold text-slate-800">Job Postings</h1>
             <p className="text-slate-400 text-xs font-medium">You have {jobs.length} active listings</p>
           </div>
@@ -101,9 +115,29 @@ export default function JobList() {
           <div className="col-span-3 text-[10px] font-black uppercase tracking-widest text-slate-300 text-right">Actions</div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-slate-400 text-sm">Loading job postings...</div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-2xl text-sm">
+            Error: {error}
+          </div>
+        )}
+
         {/* Compact List Items */}
-        <div className="space-y-3">
-          {jobs.map((job) => (
+        {!loading && !error && (
+          <div className="space-y-3">
+            {jobs.length === 0 ? (
+              <div className="text-center py-20 text-slate-400">
+                No job postings found
+              </div>
+            ) : (
+              jobs.map((job) => (
             <div 
               key={job.id} 
               onClick={() => navigate(`/job-detail/${job.id}`)}
@@ -111,24 +145,30 @@ export default function JobList() {
             >
               <div className="col-span-5 flex items-center gap-4">
                 <div className="w-12 h-12 flex-shrink-0 bg-slate-50 rounded-xl p-2.5 border border-slate-100 group-hover:bg-white transition-colors">
-                  <img src={job.logo} alt={job.company} className="w-full h-full object-contain" />
+                  <img 
+                    src={job.coverImage || job.recruiter?.profilePicture || 'https://via.placeholder.com/48'} 
+                    alt={job.title} 
+                    className="w-full h-full object-contain" 
+                  />
                 </div>
                 <div>
                   <h3 className="text-[15px] font-bold text-slate-800 group-hover:text-green-600 transition-colors leading-tight">
                     {job.title}
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">{job.company} • {job.location}</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                    {job.recruiter ? `${job.recruiter.firstName} ${job.recruiter.lastName}` : 'N/A'} • {job.location || 'N/A'}
+                  </p>
                 </div>
               </div>
 
               <div className="col-span-2">
                 <span className="bg-green-50 text-green-600 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                  {job.applications} Applied
+                  {job.applicantsCount || 0} Applied
                 </span>
               </div>
 
               <div className="col-span-2 text-sm font-black text-slate-700">
-                {job.salary}
+                {formatSalary(job.salary)}
               </div>
 
               <div className="col-span-3 flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
@@ -145,8 +185,10 @@ export default function JobList() {
                 </button>
               </div>
             </div>
-          ))}
+          ))
+        )}
         </div>
+      )}
       </main>
     </div>
   );
