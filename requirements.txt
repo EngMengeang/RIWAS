@@ -3,3 +3,6 @@ scikit-learn
 numpy
 pandas
 fastapi[all]
+flask
+PyMuPDF
+gunicorn

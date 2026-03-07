@@ -46,7 +46,7 @@ const SignUp = () => {
       localStorage.setItem("refreshToken", refreshToken);
 
       alert(`Welcome, ${user.firstName}!`);
-      navigate("/viewjob"); // candidate default page
+      navigate("/uploadcv"); // candidate default page
     } catch (err) {
       alert(err.response?.data?.errors?.[0]?.message || "Sign up failed");
     }

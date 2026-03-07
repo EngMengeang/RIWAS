@@ -23,7 +23,7 @@ def extract_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# if __name__ == "__main__":
-#     app.run(port=5001)
+# Development server (for testing only)
+# For production, use: ./run_production.sh or gunicorn -w 4 -b 127.0.0.1:5001 extract_service:app
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5001)
+    app.run(host="127.0.0.1", port=5001, debug=True)

@@ -12,6 +12,7 @@ import { User } from "../models/User.js";
 import { Recruiter} from "../models/Recruiter.js";
 import { ApplicationStatusHistory } from "../models/ApplicationStatusHistory.js";
 import { ApplicationWorkflow } from "../models/ApplicationWorkflow.js";
+import { UserResume } from "../models/UserResume.js";
 
 import { asyncHandler } from "../middlewares/errorHandler.js";
 import { uploadImage, cloudinary, uploadPDF } from "../utils/cloudinary.js";
@@ -40,9 +41,8 @@ async function extractTextWithPython(files) {
 
 
 // Submit Application
-
 export const submitApplication = asyncHandler(async (req, res) => {
-  const { jobId } = req.body;
+  const { jobId, resumeId } = req.body;
 
   const job = await JobPosting.findByPk(jobId);
   if (!job) return res.status(404).json({ error: "Job not found" });
@@ -61,40 +61,67 @@ export const submitApplication = asyncHandler(async (req, res) => {
   });
   if (exists) return res.status(409).json({ error: "Already applied" });
 
-  const resumeFile = req.files?.resume?.[0];
-  if (!resumeFile) return res.status(400).json({ error: "Resume is required" });
+  let resumeUrl, resumePublicId, resumeText;
 
-  // Upload resume
-  const resumeUpload = await uploadPDF(resumeFile.buffer, "applications");
-  const resumeUrl = resumeUpload.secure_url;
-  const resumePublicId = resumeUpload.public_id;
+  // OPTION 1: Using existing resume by ID
+  if (resumeId) {
+    const userResume = await UserResume.findOne({
+      where: { id: resumeId, user_id: req.user.id }
+    });
+    
+    if (!userResume) {
+      return res.status(404).json({ error: "Resume not found or unauthorized" });
+    }
 
-  // Optional cover letter
+    resumeUrl = userResume.resume;
+    resumePublicId = userResume.resumePublicId;
+    resumeText = userResume.extracted_text || "";
+    
+    console.log("Using existing resume:", { resumeId, resumeUrl });
+  } 
+  // OPTION 2: Uploading new resume file
+  else {
+    const resumeFile = req.files?.resume?.[0];
+    if (!resumeFile) return res.status(400).json({ error: "Resume is required" });
+
+    // Upload resume
+    const resumeUpload = await uploadPDF(resumeFile.buffer, "applications");
+    resumeUrl = resumeUpload.secure_url;
+    resumePublicId = resumeUpload.public_id;
+
+    // Extract text from Python service
+    let extractedTexts = {};
+    try {
+      extractedTexts = await extractTextWithPython({ resume: resumeFile });
+    } catch (err) {
+      console.warn("Text extraction failed:", err.message);
+    }
+    resumeText = extractedTexts.resume || "";
+    
+    console.log("Uploaded new resume:", { resumeUrl });
+  }
+
+  // Optional cover letter (always from upload)
   let coverLetterUrl = null;
   let coverLetterPublicId = null;
+  let coverLetterText = "";
+  
   const coverLetterFile = req.files?.coverLetter?.[0];
   if (coverLetterFile) {
     const upload = await uploadPDF(coverLetterFile.buffer, "cover-letters");
     coverLetterUrl = upload.secure_url;
     coverLetterPublicId = upload.public_id;
+    
+    // Extract cover letter text
+    try {
+      const extracted = await extractTextWithPython({ coverLetter: coverLetterFile });
+      coverLetterText = extracted.coverLetter || "";
+    } catch (err) {
+      console.warn("Cover letter extraction failed:", err.message);
+    }
   }
-  console.log("Cover Letter File:", coverLetterFile);
-  // Extract text from Python service
-  let extractedTexts = {};
-  try {
-    extractedTexts = await extractTextWithPython({
-      resume: resumeFile,
-      ...(coverLetterFile ? { coverLetter: coverLetterFile } : {}),
-    });
-  } catch (err) {
-    console.warn("Text extraction failed:", err.message);
-  }
-
-  const resumeText = extractedTexts.resume || "";
-  const coverLetterText = extractedTexts.coverLetter || "";
 
   // Gemini AI analysis
-
   let aiResult = {};
   try {
     const prompt = `

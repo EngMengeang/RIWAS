@@ -1,118 +1,141 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import CVinput from "../../components/CVinput";
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { uploadResume } from "../../server/userResumeAPI";
 
 const UploadCV = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file type and size
-      if (file.type !== "application/pdf") {
-        alert("Please upload a PDF file only");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
-        return;
-      }
-      setSelectedFile(file);
+  const validateAndSet = (file) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      alert("Please upload a PDF file only");
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  const handleFileChange = (e) => validateAndSet(e.target.files[0]);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    validateAndSet(e.dataTransfer.files[0]);
   };
 
   const handleContinue = async () => {
-    if (!selectedFile) {
-      alert("Please select a CV file");
-      return;
-    }
-
+    if (!selectedFile) { alert("Please select a CV file"); return; }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("cv", selectedFile);
-
-      // TODO: Replace with your actual API endpoint
-      const response = await fetch("/api/upload-cv", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload CV");
-      }
-
+      await uploadResume(selectedFile);
       alert("CV uploaded successfully!");
-      navigate("/view-jobs"); // Redirect to view jobs after upload
+      setSelectedFile(null);
+      navigate("/cv");
     } catch (err) {
+      console.error(err);
       alert(err.message || "Failed to upload CV");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleBack = () => {
-    navigate("/login");
-  };
-
   return (
-    <div className="w-full min-h-screen flex">
-      {/* Left Section */}
-      <div className="flex-1 flex flex-col m-2">
-        <div className="p-4">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base font-sans hover:bg-gray-100 hover:-translate-x-0.5 transition-all"
-          >
-            ← Back
-          </button>
-        </div>
-        <div className="flex-1 flex justify-center items-center h-full">
-          <img
-            src="./biglogo.png"
-            alt="Logo"
-            className="max-w-[80%] object-contain"
-          />
-        </div>
+    <div className="min-h-screen flex flex-col bg-white font-sans">
+
+      {/* Header with logo */}
+      <div className="flex justify-center items-center py-5 border-b-2 border-green-500">
+        <img src="./biglogo.png" alt="RIWAS Logo" className="h-20 object-contain" />
       </div>
 
-      {/* Right Section */}
-      <div className="flex-1 flex flex-col items-center border-l border-gray-200 shadow-lg px-8 py-8">
-        <p className="mt-12 mb-12 font-semibold text-2xl">Input Your Resume</p>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center pt-16 pb-10 px-4">
 
-        <div className="flex-1 w-full max-w-[450px] flex flex-col justify-center">
-          {/* File Input Component */}
-          <div className="mb-8">
-            <CVinput onChange={handleFileChange} />
-            {selectedFile && (
-              <p className="text-sm text-green-600 mt-3 text-center">
-                ✓ {selectedFile.name}
-              </p>
+        {/* Title */}
+        <h1 className="text-3xl font-bold text-gray-900 mb-10">
+          Input Your Resume
+        </h1>
+
+        {/* Drop zone */}
+        <div className="w-full max-w-md mb-3">
+          <div
+            onClick={() => fileInputRef.current.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={`
+              w-full border-2 border-dashed rounded-xl p-10 flex flex-col items-center gap-2.5 cursor-pointer transition-all duration-200
+              ${dragging || selectedFile
+                ? "border-green-500 bg-green-50"
+                : "border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50"
+              }
+            `}
+          >
+            {/* Icon circle */}
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-1 ${selectedFile ? "bg-green-100" : "bg-gray-100"}`}>
+              {selectedFile ? (
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+
+            {selectedFile ? (
+              <>
+                <p className="m-0 text-base font-semibold text-green-700">{selectedFile.name}</p>
+                <p className="m-0 text-xs text-gray-500">
+                  {(selectedFile.size / 1024).toFixed(1)} KB · Click to change file
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="m-0 text-base font-semibold text-gray-700">Click to upload or drag & drop</p>
+                <p className="m-0 text-xs text-gray-400">PDF only · Max 5MB</p>
+              </>
             )}
-          </div>
 
-          {/* Buttons */}
-          <div className="flex gap-4 justify-center mt-auto">
-            <button
-              onClick={handleBack}
-              className="px-8 py-3 bg-white border border-gray-300 text-gray-800 rounded-lg font-semibold text-base hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(0,0,0,0.1)] transition-all"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleContinue}
-              disabled={uploading || !selectedFile}
-              className="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold text-base hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(66,133,244,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? "Uploading..." : "Continue"}
-            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
         </div>
+
+        {/* Buttons */}
+        <div className="flex gap-6 mt-7 w-full max-w-md">
+          <button
+            onClick={() => navigate("/login")}
+            className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold text-base rounded-lg transition-colors cursor-pointer"
+          >
+            Back
+          </button>
+          <button
+            onClick={handleContinue}
+            disabled={uploading || !selectedFile}
+            className={`flex-1 py-3 text-white font-semibold text-base rounded-lg transition-colors
+              ${uploading || !selectedFile
+                ? "bg-green-300 cursor-not-allowed opacity-60"
+                : "bg-green-500 hover:bg-green-600 cursor-pointer"
+              }
+            `}
+          >
+            {uploading ? "Uploading..." : "Continue"}
+          </button>
+        </div>
+
       </div>
     </div>
   );
