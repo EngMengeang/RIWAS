@@ -49,14 +49,14 @@ const ApplyJob = () => {
       setErrorMsg("Please select a saved resume.");
       return;
     }
-    
+
     // Verify the resume still exists
-    const resumeExists = resumes.find(r => r.id === selectedCV);
+    const resumeExists = resumes.find((r) => r.id === selectedCV);
     if (!resumeExists) {
       setErrorMsg("Selected resume not found. Please refresh and try again.");
       return;
     }
-    
+
     setSubmitting(true);
     try {
       console.log("Submitting application with resume ID:", selectedCV);
@@ -274,16 +274,18 @@ const ApplyJob = () => {
                         : "Select a resume"}
                   </option>
                   {resumes.map((r) => {
-                    const uploadDate = r.uploaded_at || r.uploadedAt || r.createdAt;
-                    const displayName = r.ai_analysis?.personalInformation?.fullName || 
-                                       r.ai_analysis?.personalInformation?.title ||
-                                       null;
-                    
+                    const uploadDate =
+                      r.uploaded_at || r.uploadedAt || r.createdAt;
+                    const displayName =
+                      r.ai_analysis?.personalInformation?.fullName ||
+                      r.ai_analysis?.personalInformation?.title ||
+                      null;
+
                     return (
                       <option key={r.id} value={r.id}>
-                        {displayName 
-                          ? `${displayName} - ${uploadDate ? new Date(uploadDate).toLocaleDateString() : 'Unknown date'}`
-                          : `Resume - ${uploadDate ? new Date(uploadDate).toLocaleDateString() : 'Unknown date'}`}
+                        {displayName
+                          ? `${displayName} - ${uploadDate ? new Date(uploadDate).toLocaleDateString() : "Unknown date"}`
+                          : `Resume - ${uploadDate ? new Date(uploadDate).toLocaleDateString() : "Unknown date"}`}
                       </option>
                     );
                   })}
@@ -295,7 +297,7 @@ const ApplyJob = () => {
                     ⚠️ No saved resumes found.
                   </p>
                   <button
-                    onClick={() => navigate("/upload-cv")}
+                    onClick={() => navigate("/uploadcv")}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
                   >
                     → Go to Upload CV page
@@ -304,7 +306,8 @@ const ApplyJob = () => {
               )}
               {!loadingResumes && resumes.length > 0 && (
                 <p className="text-xs text-green-600 mt-1">
-                  ✓ {resumes.length} resume{resumes.length !== 1 ? 's' : ''} available
+                  ✓ {resumes.length} resume{resumes.length !== 1 ? "s" : ""}{" "}
+                  available
                 </p>
               )}
             </div>
@@ -316,23 +319,35 @@ const ApplyJob = () => {
                   Selected Resume:
                 </h4>
                 {(() => {
-                  const selected = resumes.find(r => r.id === selectedCV);
+                  const selected = resumes.find((r) => r.id === selectedCV);
                   if (!selected) return null;
-                  
+
                   const aiData = selected.ai_analysis?.personalInformation;
                   return (
                     <div className="text-xs text-green-700 space-y-1">
                       {aiData?.fullName && (
-                        <p><span className="font-medium">Name:</span> {aiData.fullName}</p>
+                        <p>
+                          <span className="font-medium">Name:</span>{" "}
+                          {aiData.fullName}
+                        </p>
                       )}
                       {aiData?.title && (
-                        <p><span className="font-medium">Title:</span> {aiData.title}</p>
+                        <p>
+                          <span className="font-medium">Title:</span>{" "}
+                          {aiData.title}
+                        </p>
                       )}
                       {aiData?.email && (
-                        <p><span className="font-medium">Email:</span> {aiData.email}</p>
+                        <p>
+                          <span className="font-medium">Email:</span>{" "}
+                          {aiData.email}
+                        </p>
                       )}
                       <p className="text-gray-500 mt-2">
-                        Uploaded: {new Date(selected.uploaded_at || selected.createdAt).toLocaleDateString()}
+                        Uploaded:{" "}
+                        {new Date(
+                          selected.uploaded_at || selected.createdAt,
+                        ).toLocaleDateString()}
                       </p>
                     </div>
                   );
