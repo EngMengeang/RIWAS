@@ -19,6 +19,10 @@ router.get("/", authenticate, jobapplicationController.getApplications);
 
 router.get("/:id", authenticate, jobapplicationController.getApplicationById);
 
+// Updated Get Application by Job Posting 
+
+router.get("/job/:jobId", authenticate, jobapplicationController.getApplicationsByJob);
+
 router.put("/:id", authenticate, jobapplicationController.updateApplicationStatus);
 
 router.delete("/:id", authenticate, jobapplicationController.deleteApplication);
