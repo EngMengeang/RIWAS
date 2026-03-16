@@ -429,3 +429,43 @@ export const getCoverLetter = asyncHandler(async (req, res) => {
     res.status(500).json({ error: "Failed to load cover letter" });
   }
 });
+
+// Get all applications for a specific job (/HR only)
+
+export const getApplicationsByJob = asyncHandler(async (req, res) => {
+  const { jobId } = req.params;
+  const { page = 1, limit = 10, status } = req.query;
+  const offset = (page - 1) * limit;
+
+  // Check job exists and requester owns it
+  const job = await JobPosting.findByPk(jobId);
+  if (!job) return res.status(404).json({ error: "Job not found" });
+  if (job.postedBy !== req.user.id)
+    return res.status(403).json({ error: "Not authorized" });
+
+  const where = { job_id: jobId };
+  if (status) where.status = status;
+
+  const { count, rows } = await JobApplication.findAndCountAll({
+    where,
+    limit: Number(limit),
+    offset,
+    include: [
+      {
+        model: Candidate,
+        as: "candidate",
+        include: {
+          model: Profile,
+          as: "profile",
+          include: { model: User, as: "user", attributes: { exclude: ["password"] } },
+        },
+      },
+    ],
+    order: [["applied_at", "DESC"]],
+  });
+
+  res.status(200).json({
+    data: rows,
+    pagination: { total: count, page: Number(page), limit: Number(limit) },
+  });
+});
