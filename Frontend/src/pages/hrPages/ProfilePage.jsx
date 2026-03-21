@@ -1,305 +1,559 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SideBar from "../../components/SideBar";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/600.css";
+import "@fontsource/roboto/700.css";
+
+const API_BASE = "http://localhost:5000/api";
+
+function getToken() {
+  return localStorage.getItem("accessToken") || localStorage.getItem("token");
+}
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return res;
+}
 
 export default function ProfilePage() {
-  const [id, setId] = useState("");
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // State for Account Details - will be updated from API
-  const [profile, setProfile] = useState({
-    fullName: "Loading...",
-    email: "",
-    phone: "",
-    role: "",
-    avatarUrl: ""
-  });
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [userId, setUserId] = useState("");
 
+  // Team members (HR users from the real API)
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // User search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [accessLevel, setAccessLevel] = useState("Member");
+  const [addingMember, setAddingMember] = useState(false);
+  const searchRef = useRef(null);
+  const searchTimeout = useRef(null);
+
+  // Flash messages
+  const [flash, setFlash] = useState(null);
+
+  const showFlash = (msg, type = "success") => {
+    setFlash({ msg, type });
+    setTimeout(() => setFlash(null), 3000);
+  };
+
+  // Load profile
   useEffect(() => {
-    // Get user data from localStorage
     const currentUser = localStorage.getItem("currentUser");
     if (currentUser) {
       const user = JSON.parse(currentUser);
-      setId(user.id);
-      console.log("User ID:", user.id);
-      
-      // Set initial profile from localStorage user data
-      setProfile({
-        fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        role: user.role || "",
-        avatarUrl: user.profilePicture || ""
-      });
+      setUserId(user.id);
     }
   }, []);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!id) return;
-      
+    if (!userId) return;
+    const fetch = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(`http://localhost:5000/api/profiles/${id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { "Authorization": `Bearer ${token}` })
-          }
-        });
-        
-        if (res.status === 404) {
-          // Profile not found - use localStorage data
-          console.log("Profile not found, using localStorage data");
-          setLoading(false);
-          return;
-        }
-        
-        if (!res.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-        
+        const res = await apiFetch(`/profiles/${userId}`);
         const result = await res.json();
-        console.log("Profile data:", result);
-        
-        // Extract profile and user data from response
-        const profileData = result.data;
-        const userData = profileData?.user;
-        
-        if (profileData) {
-          setProfile({
-            fullName: `${userData?.firstName || ""} ${userData?.lastName || ""}`.trim(),
-            email: userData?.email || "",
-            phone: userData?.phoneNumber || "",
-            role: profileData?.headline || profileData?.bio || userData?.role || "",
-            avatarUrl: profileData?.avatarUrl || userData?.profilePicture || ""
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
+        const pd = result.data;
+        const ud = pd?.user;
+        setProfile({
+          fullName: `${ud?.firstName || ""} ${ud?.lastName || ""}`.trim(),
+          email: ud?.email || "",
+          phone: ud?.phoneNumber || "",
+          role: pd?.headline || ud?.role || "",
+          bio: pd?.bio || "",
+          avatarUrl: pd?.avatarUrl || ud?.profilePicture || "",
+        });
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchProfile();
-  }, [id]);
+    fetch();
+  }, [userId]);
 
-  // State for Team Management
-  const [teamMembers, setTeamMembers] = useState([
-    { id: 1, name: "Vorn Sina", email: "vorn.sina@example.com", role: "Senior Data Scientist", access: "Super Admin" },
-    { id: 2, name: "Keo Socheata", email: "socheata.k@example.com", role: "HR Analyst", access: "Admin" }
-  ]);
+  // Load team members (all HR/recruiter users)
+  useEffect(() => {
+    const loadTeam = async () => {
+      try {
+        const res = await apiFetch(`/users?role=recruiter&limit=50`);
+        const result = await res.json();
+        const users = Array.isArray(result) ? result : result?.data || result?.users || [];
+        setTeamMembers(
+          users.map((u) => ({
+            id: u.id,
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.email,
+            email: u.email,
+            role: u.role || "Recruiter",
+            avatarUrl: u.profilePicture || u.avatarUrl || "",
+            access: u.accessLevel || "Member",
+          }))
+        );
+      } catch (e) {
+        console.error("Team load error:", e);
+      }
+    };
+    loadTeam();
+  }, []);
 
-  // State for Invite Modal Inputs
-  const [newMember, setNewMember] = useState({ name: "", email: "", role: "", access: "Member" });
+  // Search users
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await apiFetch(`/users?search=${encodeURIComponent(searchQuery)}&limit=8`);
+        const result = await res.json();
+        const users = Array.isArray(result) ? result : result?.data || result?.users || [];
+        setSearchResults(
+          users.map((u) => ({
+            id: u.id,
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.email,
+            email: u.email,
+            role: u.role || "Recruiter",
+            avatarUrl: u.profilePicture || u.avatarUrl || "",
+          }))
+        );
+      } catch (e) {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+  }, [searchQuery]);
 
-  const handleInvite = (e) => {
-    e.preventDefault();
-    if (newMember.name && newMember.email) {
-      const id = Date.now(); // More reliable unique ID
-      setTeamMembers([...teamMembers, { ...newMember, id }]);
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    setSearchQuery(user.name || user.email);
+    setSearchResults([]);
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedUser) return;
+    if (teamMembers.find((m) => m.id === selectedUser.id)) {
+      showFlash("This user is already in the team.", "error");
+      return;
+    }
+    setAddingMember(true);
+    try {
+      // Optionally call an API to record team membership — for now, add locally
+      setTeamMembers((prev) => [
+        ...prev,
+        {
+          id: selectedUser.id,
+          name: selectedUser.name,
+          email: selectedUser.email,
+          role: selectedUser.role,
+          avatarUrl: selectedUser.avatarUrl,
+          access: accessLevel,
+        },
+      ]);
+      showFlash(`${selectedUser.name} added to the team.`);
       setIsModalOpen(false);
-      setNewMember({ name: "", email: "", role: "", access: "Member" });
+      setSelectedUser(null);
+      setSearchQuery("");
+      setAccessLevel("Member");
+    } catch (e) {
+      showFlash("Failed to add member.", "error");
+    } finally {
+      setAddingMember(false);
     }
   };
 
   const removeMember = (id) => {
-    setTeamMembers(teamMembers.filter(m => m.id !== id));
+    if (!window.confirm("Remove this member from the team?")) return;
+    setTeamMembers((prev) => prev.filter((m) => m.id !== id));
+    showFlash("Member removed.");
   };
 
-  // Reusable Styles
-  const btnBase = "h-11 px-8 rounded-xl font-bold text-sm transition-all flex items-center justify-center whitespace-nowrap active:scale-95";
-  const btnDark = `${btnBase} bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-200 w-[140px]`;
-  const btnSecondary = `${btnBase} bg-white border border-slate-200 text-slate-700 hover:bg-slate-50`;
-  const inputDisplay = "h-11 flex items-center w-full px-4 bg-slate-50 border border-slate-100 rounded-xl text-slate-600 font-medium text-sm";
+  const getInitials = (name) =>
+    name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  const btnDark =
+    "h-10 px-5 rounded-xl font-semibold text-sm bg-gray-900 text-white hover:bg-gray-800 transition-all flex items-center gap-2";
+  const btnOutline =
+    "h-10 px-5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all flex items-center gap-2";
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: "'Roboto', sans-serif" }}>
+        <SideBar />
+        <main className="flex-1 ml-[227px] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white flex font-sans text-slate-900">
+    <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: "'Roboto', sans-serif" }}>
       <SideBar />
-      <main className="flex-1 ml-[227px]">
-        <div className="px-12 py-12 max-w-7xl mx-auto space-y-8">
-
-          {/* 2. ACCOUNT DETAILS (Merged below Configuration) */}
-          <section className="bg-white rounded-[32px] border border-slate-100 p-10 shadow-sm">
-            {/* HEADER */}
-            <div className=" bg-white  border-slate-100 flex justify-between items-center">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 rounded-[28px] bg-slate-900 overflow-hidden border-4 border-slate-50 shadow-sm">
-                  <img 
-                    src={profile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.fullName}`} 
-                    alt="profile" 
-                  />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900">{profile.fullName}</h1>
-                  <p className="text-slate-400 text-sm mt-1">{profile.email} • {profile.role}</p>
-                </div>
-              </div>
-              <button onClick={() => navigate("/edit-profile")} className={btnSecondary}>Edit Profile</button>
-            </div>
-            <h3 className="font-bold text-xl text-slate-800 mt-12 mb-6">Personal Details</h3>
-            <div className="grid grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                <div className={inputDisplay}>{profile.fullName}</div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                <div className={inputDisplay}>{profile.email}</div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
-                <div className={inputDisplay}>{profile.phone}</div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                <div className={inputDisplay}>{profile.role}</div>
-              </div>
-            </div>
-          </section>
-
-
-          {/* 1. SYSTEM CONFIGURATION */}
-          <section className="bg-white rounded-[32px] border border-slate-100 p-10 shadow-sm">
-            <h3 className="font-bold text-xl text-slate-800 mb-6">System Configuration</h3>
-            <div className="grid grid-cols-2 gap-10">
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Recruitment Process</label>
-                <div className="flex gap-4">
-                  <div className="h-11 flex-1 px-4 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center font-semibold text-slate-700">7 Steps Process</div>
-                  <Link to="/recruitment-workflow" className={btnDark}>Edit Process</Link>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Scoring Matrix</label>
-                <div className="flex gap-4">
-                  <div className="h-11 flex-1 px-4 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center font-semibold text-slate-700">5 Steps Matrix</div>
-                  <Link to="/matrix-page" className={btnDark}>Edit Matrix</Link>
-                </div>
-              </div>
-            </div>
-          </section>
-
-
-          {/* 3. TEAM MANAGEMENT */}
-          <section className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">
-            <div className="p-8 flex justify-between items-center border-b border-slate-50">
-              <h3 className="font-bold text-xl text-slate-800">Team Management</h3>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className={`${btnDark} w-auto px-4 flex items-center gap-2`}
-              >
-                Invite Member +
-              </button>
-            </div>
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                <tr>
-                  <th className="px-10 py-5">Collaborator</th>
-                  <th className="px-6 py-5">Role</th>
-                  <th className="px-6 py-5">Access Level</th>
-                  <th className="px-10 py-5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {teamMembers.map((member) => (
-                  <tr key={member.id} className="group hover:bg-slate-50/30">
-                    <td className="px-10 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-400 text-[10px]">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-slate-800">{member.name}</p>
-                          <p className="text-[11px] text-slate-400">{member.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-sm text-slate-600">{member.role || "N/A"}</td>
-                    <td className="px-6 py-5">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded uppercase">
-                        {member.access}
-                      </span>
-                    </td>
-                    <td className="px-10 py-5 text-right">
-                      <button
-                        onClick={() => removeMember(member.id)}
-                        className="text-red-300 hover:text-red-500 transition-colors p-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        </div>
-
-        {/* INVITE MODAL */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <form onSubmit={handleInvite} className="bg-white p-10 rounded-[32px] w-full max-w-[480px] shadow-2xl animate-in fade-in zoom-in duration-200">
-              <h3 className="text-xl font-bold text-slate-900 mb-6 text-center">Invite Collaborator</h3>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Full Name</label>
-                  <input
-                    required
-                    placeholder="e.g. John Doe"
-                    className="w-full h-11 px-5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-200"
-                    value={newMember.name}
-                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email</label>
-                  <input
-                    required
-                    type="email"
-                    placeholder="john@example.com"
-                    className="w-full h-11 px-5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-200"
-                    value={newMember.email}
-                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Role</label>
-                    <input
-                      placeholder="e.g. Designer"
-                      className="w-full h-11 px-5 bg-slate-50 border border-slate-100 rounded-xl outline-none"
-                      value={newMember.role}
-                      onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Access Level</label>
-                    <select
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-slate-600 text-xs"
-                      value={newMember.access}
-                      onChange={(e) => setNewMember({ ...newMember, access: e.target.value })}
-                    >
-                      <option value="Member">Member</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Super Admin">Super Admin</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-12 font-bold text-slate-400 hover:text-slate-600">Cancel</button>
-                  <button type="submit" className="bg-slate-900 text-white flex-1 h-12 rounded-xl font-bold shadow-lg shadow-slate-200">Confirm Invite</button>
-                </div>
-              </div>
-            </form>
+      <main className="flex-1 ml-[227px] h-screen overflow-y-auto">
+        {/* Flash */}
+        {flash && (
+          <div
+            className={`fixed top-4 right-4 z-[200] px-5 py-3 rounded-xl text-sm font-semibold shadow-lg ${
+              flash.type === "error"
+                ? "bg-red-50 text-red-700 border border-red-100"
+                : "bg-green-50 text-green-700 border border-green-100"
+            }`}
+          >
+            {flash.msg}
           </div>
         )}
+
+        {/* Header */}
+        <div className="px-8 pt-8 pb-0 bg-gray-50 flex-shrink-0">
+          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+          <div className="h-0.5 w-full bg-green-500 rounded mt-2 mb-6" />
+        </div>
+
+        <div className="px-8 pb-12 space-y-6">
+          {/* Account Details */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800 text-base">Account Details</h2>
+              <button onClick={() => navigate("/edit-profile")} className={btnOutline}>
+                Edit Profile
+              </button>
+            </div>
+            <div className="px-8 py-6 flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
+                {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt="avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xl">
+                    {getInitials(profile?.fullName)}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-gray-900 text-lg">{profile?.fullName || "—"}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{profile?.email}</p>
+                {profile?.role && (
+                  <span className="mt-1.5 inline-block px-2.5 py-0.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-100">
+                    {profile.role}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="px-8 pb-6 grid grid-cols-4 gap-4">
+              {[
+                { label: "Full Name", value: profile?.fullName },
+                { label: "Email Address", value: profile?.email },
+                { label: "Phone Number", value: profile?.phone || "—" },
+                { label: "Role / Title", value: profile?.role || "—" },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
+                    {label}
+                  </p>
+                  <div className="h-10 flex items-center px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 font-medium">
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {profile?.bio && (
+              <div className="px-8 pb-6">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Bio</p>
+                <div className="px-3 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 leading-relaxed">
+                  {profile.bio}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* System Configuration */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-8 py-5 border-b border-gray-50">
+              <h2 className="font-semibold text-gray-800 text-base">System Configuration</h2>
+            </div>
+            <div className="px-8 py-6 grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                  Recruitment Process
+                </p>
+                <div className="flex gap-3">
+                  <div className="h-10 flex-1 flex items-center px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 font-medium">
+                    7 Steps Process
+                  </div>
+                  <Link to="/recruitment-workflow" className={btnDark}>
+                    Edit Process
+                  </Link>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                  Scoring Matrix
+                </p>
+                <div className="flex gap-3">
+                  <div className="h-10 flex-1 flex items-center px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-700 font-medium">
+                    5 Steps Matrix
+                  </div>
+                  <Link to="/matrix-page" className={btnDark}>
+                    Edit Matrix
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Team Management */}
+          <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-gray-800 text-base">Team Management</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{teamMembers.length} member{teamMembers.length !== 1 ? "s" : ""}</p>
+              </div>
+              <button onClick={() => setIsModalOpen(true)} className={btnDark}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Member
+              </button>
+            </div>
+            {teamMembers.length === 0 ? (
+              <div className="px-8 py-12 text-center text-gray-400 text-sm">
+                No team members yet. Add HR users to this team.
+              </div>
+            ) : (
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-8 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                      Member
+                    </th>
+                    <th className="px-6 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                      Access
+                    </th>
+                    <th className="px-8 py-3 text-right text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {teamMembers.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-8 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl overflow-hidden bg-green-100 flex-shrink-0 flex items-center justify-center">
+                            {member.avatarUrl ? (
+                              <img
+                                src={member.avatarUrl}
+                                alt={member.name}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-green-700 text-xs font-bold">
+                                {getInitials(member.name)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-gray-800">{member.name}</p>
+                            <p className="text-xs text-gray-400">{member.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.role || "—"}</td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-semibold rounded-full uppercase tracking-wide">
+                          {member.access}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 text-right">
+                        <button
+                          onClick={() => removeMember(member.id)}
+                          className="text-gray-300 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-50"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        </div>
       </main>
+
+      {/* Add Member Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="px-7 pt-6 pb-5 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Add Team Member</h3>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedUser(null);
+                  setSearchQuery("");
+                  setSearchResults([]);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-7 py-5 space-y-4">
+              {/* Search user */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">
+                  Search HR User
+                </label>
+                <div className="relative" ref={searchRef}>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    {searching ? (
+                      <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setSelectedUser(null);
+                    }}
+                    className="w-full h-10 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-100 focus:border-green-400 transition-all"
+                  />
+                  {/* Dropdown results */}
+                  {searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden max-h-48 overflow-y-auto">
+                      {searchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => handleSelectUser(user)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg overflow-hidden bg-green-100 flex-shrink-0 flex items-center justify-center">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-green-700 text-xs font-bold">{getInitials(user.name)}</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                            <p className="text-xs text-gray-400">{user.email}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Selected user preview */}
+                {selectedUser && (
+                  <div className="mt-2 flex items-center gap-3 px-3 py-2.5 bg-green-50 border border-green-100 rounded-xl">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden bg-green-100 flex-shrink-0 flex items-center justify-center">
+                      {selectedUser.avatarUrl ? (
+                        <img src={selectedUser.avatarUrl} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-green-700 text-xs font-bold">{getInitials(selectedUser.name)}</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-green-800">{selectedUser.name}</p>
+                      <p className="text-xs text-green-600">{selectedUser.email}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Access Level */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-1.5">
+                  Access Level
+                </label>
+                <select
+                  value={accessLevel}
+                  onChange={(e) => setAccessLevel(e.target.value)}
+                  className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 outline-none focus:ring-2 focus:ring-green-100 focus:border-green-400"
+                >
+                  <option value="Member">Member</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="px-7 pb-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedUser(null);
+                  setSearchQuery("");
+                }}
+                className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMember}
+                disabled={!selectedUser || addingMember}
+                className="flex-1 h-10 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {addingMember ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  "Add to Team"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

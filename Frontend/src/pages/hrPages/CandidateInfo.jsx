@@ -1,695 +1,842 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiChevronDown, FiMail, FiCalendar, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import {
+  FiSearch, FiChevronDown, FiMail, FiCalendar,
+  FiChevronLeft, FiChevronRight, FiFileText,
+  FiX, FiUsers, FiTrendingUp, FiCheckCircle,
+  FiAlertCircle, FiFilter, FiGitBranch,
+} from 'react-icons/fi';
 import SideBar from "../../components/SideBar";
+import { getAllApplicationsForRecruiter, updateApplicationStatus } from "../../server/jobapplicationAPI";
+import { getWorkflowByApplication } from "../../server/workflowAPI";
+import { getWorkflowDefinitions } from "../../server/workflowdefinitionAPI";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/600.css";
+import "@fontsource/roboto/700.css";
 
-const CandidateInfo = () => {
-  const navigate = useNavigate();
-  
-  // Sample applications data with dates - FIXED: Unique IDs
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      name: 'Eng Mengeang',
-      position: 'Data Scientist',
-      email: 'engmeneang@example.com',
-      appliedDate: '2025-02-12',
-      displayDate: '12/Feb/2025',
-      status: 'Application',
-      stage: 'Application',
-      summary: 'Data Science student specializing in healthcare analytics and machine-learning-based health monitoring',
-      skills: [
-        'Programming: Python, JavaScript, SQL, R',
-        'Frameworks: React, Flask, Node.js',
-        'Tools: Git, Tableau, PostgreSQL, VS Code',
-        'Soft Skills: Teamwork, Problem Solving, Adaptability, Time Management'
-      ],
-      certifications: [
-        'CCNA Final Exam – Cisco Networking Academy (2024)'
-      ],
-      education: [
-        'Bachelor of Computer Science - Royal University of Phnom Penh (2021-2025)',
-        'GPA: 3.8/4.0'
-      ],
-      workExperience: [
-        'Data Analysis Intern - ABC Healthcare (2024)',
-        'Research Assistant - RUPP Data Lab (2023-2024)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 2,
-      name: 'Touch Sopheak',
-      position: 'Mobile App Developer',
-      email: 'touchsopheak@example.com',
-      appliedDate: '2025-02-11',
-      displayDate: '11/Feb/2025',
-      status: 'Screening',
-      stage: 'Screening',
-      summary: 'Mobile developer with 2 years of experience building cross-platform applications using React Native and Flutter',
-      skills: [
-        'Programming: JavaScript, Dart, Swift, Kotlin',
-        'Frameworks: React Native, Flutter, Expo',
-        'Tools: Xcode, Android Studio, Firebase',
-        'Soft Skills: Communication, Leadership, Problem Solving'
-      ],
-      certifications: [
-        'Mobile App Development Certificate – Google (2024)',
-        'React Native Professional – Udemy (2023)'
-      ],
-      education: [
-        'Bachelor of Software Engineering - Institute of Technology of Cambodia (2020-2024)',
-        'GPA: 3.6/4.0'
-      ],
-      workExperience: [
-        'Mobile Developer - Tech Startup Co. (2023-2025)',
-        'Frontend Developer Intern - Digital Agency (2022-2023)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 3,
-      name: 'Keo Veasna',
-      position: 'Backend Developer',
-      email: 'keoveasna@example.com',
-      appliedDate: '2025-02-10',
-      displayDate: '10/Feb/2025',
-      status: 'Interview',
-      stage: 'Interview',
-      summary: 'Backend engineer specializing in microservices architecture and cloud-based solutions',
-      skills: [
-        'Programming: Java, Python, Go, SQL',
-        'Frameworks: Spring Boot, Django, Express',
-        'Tools: Docker, Kubernetes, AWS, MongoDB',
-        'Soft Skills: Analytical Thinking, Team Collaboration'
-      ],
-      certifications: [
-        'AWS Certified Solutions Architect (2024)',
-        'Docker Certified Associate (2023)'
-      ],
-      education: [
-        'Bachelor of Information Technology - National University of Management (2019-2023)',
-        'GPA: 3.7/4.0'
-      ],
-      workExperience: [
-        'Backend Engineer - FinTech Company (2023-Present)',
-        'Software Developer - E-commerce Platform (2021-2023)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 4,
-      name: 'Sok Dara',
-      position: 'Data Analysis Intern',
-      email: 'sokdara@example.com',
-      appliedDate: '2025-02-09',
-      displayDate: '09/Feb/2025',
-      status: 'Assessment',
-      stage: 'Assessment',
-      summary: 'Creative designer with strong focus on user-centered design and accessibility',
-      skills: [
-        'Design Tools: Figma, Adobe XD, Sketch, Illustrator',
-        'Prototyping: InVision, Framer, Principle',
-        'Skills: User Research, Wireframing, Visual Design',
-        'Soft Skills: Creativity, Empathy, Communication'
-      ],
-      certifications: [
-        'Google UX Design Professional Certificate (2024)'
-      ],
-      education: [
-        'Bachelor of Graphic Design - Royal University of Fine Arts (2020-2024)',
-        'GPA: 3.9/4.0'
-      ],
-      workExperience: [
-        'UX Designer Intern - Design Studio (2023-2024)',
-        'Freelance Graphic Designer (2022-2023)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 5,
-      name: 'Lim Chenda',
-      position: 'Data Science Intern',
-      email: 'limchenda@example.com',
-      appliedDate: '2025-02-09',
-      displayDate: '09/Feb/2025',
-      status: 'Assessment',
-      stage: 'Assessment',
-      summary: 'Data science student with passion for AI and predictive modeling',
-      skills: [
-        'Programming: Python, R, SQL',
-        'ML Libraries: scikit-learn, pandas, numpy',
-        'Tools: Jupyter, Excel, Power BI',
-        'Soft Skills: Analytical Thinking, Research, Communication'
-      ],
-      certifications: [
-        'Google Data Analytics Certificate (2024)'
-      ],
-      education: [
-        'Bachelor of Statistics - Royal University of Phnom Penh (2021-2025)',
-        'GPA: 3.7/4.0'
-      ],
-      workExperience: [
-        'Data Analyst Intern - Market Research Firm (2024)',
-        'Statistics Tutor - RUPP (2023-2024)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 6,
-      name: 'Pheakdey Chan',
-      position: 'UI/UX Designer',
-      email: 'pheakdey@example.com',
-      appliedDate: '2025-02-09',
-      displayDate: '09/Feb/2025',
-      status: 'Assessment',
-      stage: 'Assessment',
-      summary: 'Creative designer with strong focus on user-centered design and accessibility',
-      skills: [
-        'Design Tools: Figma, Adobe XD, Sketch, Illustrator',
-        'Prototyping: InVision, Framer, Principle',
-        'Skills: User Research, Wireframing, Visual Design',
-        'Soft Skills: Creativity, Empathy, Communication'
-      ],
-      certifications: [
-        'Google UX Design Professional Certificate (2024)'
-      ],
-      education: [
-        'Bachelor of Graphic Design - Royal University of Fine Arts (2020-2024)',
-        'GPA: 3.9/4.0'
-      ],
-      workExperience: [
-        'UI/UX Designer - Tech Company (2023-Present)',
-        'Design Intern - Advertising Agency (2022-2023)'
-      ],
-      avatar: '👤'
-    },
-    {
-      id: 7,
-      name: 'Chhay Sophea',
-      position: 'Data Scientist',
-      email: 'chhaysophea@example.com',
-      appliedDate: '2025-02-08',
-      displayDate: '08/Feb/2025',
-      status: 'Decision',
-      stage: 'Decision',
-      summary: 'Data scientist with expertise in machine learning and predictive analytics',
-      skills: [
-        'Programming: Python, R, SQL, Scala',
-        'ML Libraries: TensorFlow, PyTorch, scikit-learn',
-        'Tools: Jupyter, Tableau, Power BI',
-        'Soft Skills: Critical Thinking, Presentation, Research'
-      ],
-      certifications: [
-        'IBM Data Science Professional Certificate (2024)',
-        'Machine Learning Specialization – Stanford (2023)'
-      ],
-      education: [
-        'Master of Data Science - Royal University of Phnom Penh (2023-2025)',
-        'Bachelor of Mathematics - RUPP (2019-2023)'
-      ],
-      workExperience: [
-        'Data Scientist - AI Research Lab (2023-Present)',
-        'ML Engineer - Tech Startup (2022-2023)',
-        'Data Analyst - Consulting Firm (2021-2022)'
-      ],
-      avatar: '👤'
+/* ─── Status config ─────────────────────────────────────────────────────────── */
+const STATUS = {
+  applied:    { label: 'Applied',    bg: '#f8fafc', text: '#64748b', dot: '#94a3b8', border: '#e2e8f0' },
+  review:     { label: 'In Review',  bg: '#eff6ff', text: '#2563eb', dot: '#3b82f6', border: '#bfdbfe' },
+  interview:  { label: 'Interview',  bg: '#f5f3ff', text: '#7c3aed', dot: '#7c3aed', border: '#ddd6fe' },
+  assessment: { label: 'Assessment', bg: '#fff7ed', text: '#c2410c', dot: '#ea580c', border: '#fed7aa' },
+  offer:      { label: 'Offer Sent', bg: '#f0fdf4', text: '#15803d', dot: '#22c55e', border: '#bbf7d0' },
+  hired:      { label: 'Hired',      bg: '#dcfce7', text: '#14532d', dot: '#16a34a', border: '#86efac' },
+  rejected:   { label: 'Rejected',   bg: '#fff1f2', text: '#be123c', dot: '#e11d48', border: '#fecdd3' },
+};
+
+/* ─── Helpers ───────────────────────────────────────────────────────────────── */
+const getInitials = (name) =>
+  name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+const stripFences = (s) =>
+  s.replace(/^```json[\r\n]*/i, '').replace(/^```[\r\n]*/i, '').replace(/```[\r\n]*$/i, '').trim();
+
+const parseAI = (ai) => {
+  if (!ai) return {};
+  let c = ai;
+  if (typeof c === 'object' && c?.ai_analysis && !c?.personalInformation) c = c.ai_analysis;
+  if (typeof c === 'string') { try { c = JSON.parse(stripFences(c)); } catch { return {}; } }
+  if (typeof c === 'object' && !c.skills && typeof c.raw === 'string') {
+    try { const r = JSON.parse(stripFences(c.raw)); if (typeof r === 'object') c = r; } catch {}
+  }
+  return typeof c === 'object' && c !== null ? c : {};
+};
+
+const asList = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v.trim()) ? [v] : [];
+
+const extractSection = (text, names) => {
+  if (!text) return [];
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const ALL = ['education','experience','work experience','skills','skill','certification','certifications','projects','summary','profile','languages','extracurricular','achievements','references','objective','contact','personal'];
+  const isTarget = l => names.some(n => l.toLowerCase().includes(n.toLowerCase()) && l.length < 60);
+  const isOther  = l => ALL.some(h => l.toLowerCase().includes(h) && l.length < 60) && !isTarget(l);
+  let inSec = false; const out = [];
+  for (const l of lines) {
+    if (isTarget(l)) { inSec = true; continue; }
+    if (inSec) { if (isOther(l)) break; if (l.length > 2) out.push(l.replace(/^[-•*]\s*/, '')); }
+  }
+  return out;
+};
+
+const getSummary = (text) => {
+  if (!text) return 'No summary available.';
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const HEADS = ['summary', 'professional summary', 'profile', 'objective', 'about'];
+  const OTHER = ['education', 'experience', 'skill', 'certification', 'project', 'language'];
+  let inS = false; const out = [];
+  for (const l of lines) {
+    const lo = l.toLowerCase();
+    if (HEADS.some(h => lo.includes(h) && l.length < 60)) { inS = true; continue; }
+    if (inS) {
+      if (OTHER.some(h => lo.includes(h) && l.length < 60)) break;
+      if (l.length > 5) out.push(l);
+      if (out.length >= 5) break;
     }
-  ]);
+  }
+  if (out.length) return out.join(' ');
+  const m = lines.filter(l => l.length > 40);
+  return m.length ? m.slice(0, 3).join(' ') : text.slice(0, 400) + (text.length > 400 ? '…' : '');
+};
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStage, setSelectedStage] = useState('All');
-  const [selectedFilter, setSelectedFilter] = useState('Summary');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 1)); // February 2025
-
-  // Filter options
-  const stages = ['All', 'Application', 'Screening', 'Interview', 'Assessment', 'References', 'Decision'];
-  const filterOptions = ['Summary', 'Work Experience', 'Skill', 'Certification', 'Education'];
-  
-  // Status colors
-  const getStatusColor = (status) => {
-    const colors = {
-      'Application': 'bg-blue-100 text-blue-700',
-      'Screening': 'bg-purple-100 text-purple-700',
-      'Interview': 'bg-yellow-100 text-yellow-700',
-      'Assessment': 'bg-orange-100 text-orange-700',
-      'References': 'bg-cyan-100 text-cyan-700',
-      'Decision': 'bg-green-100 text-green-700'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700'
-  };
-
-  // Calendar functions
-  const getDaysInMonth = (date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    const days = [];
-    // Add empty cells for days before month starts
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    // Add actual days
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i);
-    }
-    return days;
-  };
-
-  const getApplicationCountForDate = (day) => {
-    if (!day) return 0;
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return applications.filter(app => app.appliedDate === dateStr).length;
-  };
-
-  const handleDateClick = (day) => {
-    if (!day) return;
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    setSelectedDate(dateStr);
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
-  };
-
-  // Handle search
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  // Filter applications
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         app.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         app.email.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStage = selectedStage === 'All' || app.stage === selectedStage;
-    const matchesDate = !selectedDate || app.appliedDate === selectedDate;
-    
-    return matchesSearch && matchesStage && matchesDate;
-  });
-
-  // Handle View CV
-  const handleViewCV = (applicationId) => {
-    console.log('Viewing CV for application:', applicationId);
-    navigate(`/view-cv/${applicationId}`);
-  };
-
-  // Handle Reject - Auto send rejection email
-  const handleReject = (applicationId) => {
-    const app = applications.find(a => a.id === applicationId);
-    if (window.confirm(`Are you sure you want to reject ${app.name}'s application?`)) {
-      console.log(`Sending rejection email to ${app.name}`);
-      alert(`Rejection email sent to ${app.name}`);
-      setApplications(applications.filter(a => a.id !== applicationId));
-    }
-  };
-
-  // Handle Next Stage - Smart navigation based on status
-  const handleNextStage = (applicationId) => {
-    const app = applications.find(a => a.id === applicationId);
-    
-    // If Application stage - auto send to Screening
-    if (app.stage === 'Application') {
-      console.log(`Auto-sending screening notification to ${app.name}`);
-      alert(`Screening notification sent to ${app.name}!`);
-      // Update status
-      setApplications(applications.map(a => 
-        a.id === applicationId ? { ...a, status: 'Screening', stage: 'Screening' } : a
-      ));
-    }
-    // If Screening or Interview - go to notification page
-    else if (app.stage === 'Screening' || app.stage === 'Interview') {
-      navigate(`/send-notification/${applicationId}`, { state: { candidate: app } });
-    }
-    // If Assessment - go to Decision
-    else if (app.stage === 'Assessment') {
-      console.log(`Moving ${app.name} to Decision stage`);
-      alert(`${app.name} moved to Decision stage`);
-      setApplications(applications.map(a => 
-        a.id === applicationId ? { ...a, status: 'Decision', stage: 'Decision' } : a
-      ));
-    }
-    // If Decision - send offer letter
-    else if (app.stage === 'Decision') {
-      navigate(`/send-offer/${applicationId}`, { state: { candidate: app } });
-    }
-  };
-
-  const days = getDaysInMonth(currentMonth);
-  const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-  // Count positions from applications
-  const positionCount = applications.reduce((acc, app) => {
-    const position = app.position;
-    if (!position) return acc;
-    acc[position] = (acc[position] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Total applications
-  const totalApplications = applications.length;
-
-  // Convert to array + calculate percentage
-  const positionStats = Object.keys(positionCount)
-    .map((position) => ({
-      name: position,
-      count: positionCount[position],
-      percentage: Math.round(
-        (positionCount[position] / totalApplications) * 100
-      ),
-    }))
-    .sort((a, b) => b.count - a.count);
-
-  // Dynamic color list
-  const colors = [
-    "bg-blue-400",
-    "bg-green-400",
-    "bg-purple-400",
-    "bg-orange-400",
-    "bg-red-400",
-    "bg-indigo-400",
-    "bg-pink-400",
-    "bg-teal-400",
-  ];
-
-  const finalStats = positionStats.map((item, index) => ({
-    ...item,
-    color: colors[index % colors.length],
-  }));
-
+/* ─── Status Pill ───────────────────────────────────────────────────────────── */
+const StatusPill = ({ status }) => {
+  const cfg = STATUS[status?.toLowerCase()] || STATUS.applied;
   return (
-    <div className="min-h-screen font-sans text-slate-900 bg-gray-50 flex">
-      <style>{`
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .scrollbar-hide {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
-        }
-      `}</style>
-      
-      <SideBar />
-      <main className="flex-1 ml-[227px] p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Manage Application</h1>
-          <div className="h-1 w-full bg-gradient-to-r from-green-400 to-green-500 rounded-full"></div>
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
+      style={{ background: cfg.bg, color: cfg.text, borderColor: cfg.border }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+      {cfg.label}
+    </span>
+  );
+};
+
+/* ─── Section content renderer ──────────────────────────────────────────────── */
+const SectionContent = ({ app, filter }) => {
+  if (filter === 'Summary') return (
+    <p className="text-sm text-gray-600 leading-relaxed">{app.summary || 'No summary available.'}</p>
+  );
+  if (filter === 'Smart Insight') {
+    if (app.matchScore <= 0) return <p className="text-sm text-gray-400 italic">No AI analysis available.</p>;
+    const pct   = Math.round(app.matchScore * 100);
+    const clPct = Math.round(app.coverLetterScore * 100);
+    const clLabel = app.coverLetterScore >= 0.8 ? 'Compelling' : app.coverLetterScore >= 0.6 ? 'Good' : app.coverLetterScore >= 0.4 ? 'Average' : 'Needs Work';
+    return (
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-sm mb-1.5">
+            <span className="text-gray-600 font-medium">Job Match</span>
+            <span className="font-semibold text-gray-900">{pct}%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-green-500 rounded-full" style={{ width: pct + '%' }} />
+          </div>
         </div>
-
-        <div className="grid grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-
-          {/* Left Side - Filters and Applications (3 columns) */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Filters */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex flex-wrap gap-4 items-center">
-                {/* Filter by Content Type */}
-                <div className="relative">
-                  <select
-                    value={selectedFilter}
-                    onChange={(e) => setSelectedFilter(e.target.value)}
-                    className="appearance-none px-6 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 bg-white cursor-pointer font-medium"
-                  >
-                    {filterOptions.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-
-                {/* Filter by Stage */}
-                <div className="relative">
-                  <select
-                    value={selectedStage}
-                    onChange={(e) => setSelectedStage(e.target.value)}
-                    className="appearance-none px-6 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 bg-white cursor-pointer font-medium"
-                  >
-                    {stages.map(stage => (
-                      <option key={stage} value={stage}>{stage}</option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-
-                {/* Search */}
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    placeholder="Search by name, position, or email..."
-                    className="w-full px-6 py-3 pl-12 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500"
-                  />
-                  <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
-                </div>
-              </div>
+        {app.coverLetterScore > 0 && (
+          <div>
+            <div className="flex justify-between text-sm mb-1.5">
+              <span className="text-gray-600 font-medium">Cover Letter <span className="text-gray-400 font-normal">· {clLabel}</span></span>
+              <span className="font-semibold text-gray-900">{clPct}%</span>
             </div>
-
-            {/* Results Count */}
-            <div>
-              <p className="text-gray-600 font-medium">
-                Showing <span className="text-gray-900 font-bold">{filteredApplications.length}</span> application{filteredApplications.length !== 1 ? 's' : ''}
-                {selectedDate && ` on ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
-              </p>
-            </div>
-
-            {/* Applications List - FIXED: Added scrollbar-hide class */}
-            <div className="space-y-4 max-h-[700px] overflow-y-auto scrollbar-hide">   
-              {filteredApplications.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                  <p className="text-xl text-gray-500">No applications found</p>
-                  <p className="text-gray-400 mt-2">Try adjusting your filters or search query</p>
-                </div>
-              ) : (
-                filteredApplications.map((app) => (
-                  <div key={app.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                    {/* Application Header */}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        {/* Left Side - Applicant Info */}
-                        <div className="flex items-start gap-4 flex-1">
-                          {/* Avatar */}
-                          <div className="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl flex-shrink-0">
-                            {app.avatar}
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
-                              <h3 className="text-xl font-bold text-gray-900">{app.name}</h3>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(app.status)}`}>
-                                {app.status}
-                              </span>
-                            </div>
-                            
-                            <p className="text-gray-700 font-medium mb-2">{app.position}</p>
-                            
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <div className="flex items-center gap-2">
-                                <FiMail className="text-gray-400" />
-                                <span>{app.email}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <FiCalendar className="text-gray-400" />
-                                <span>Applied: {app.displayDate}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content Display based on Filter - FIXED: Now properly responds to filter */}
-                      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                        <h4 className="text-sm font-bold text-gray-700 mb-2 uppercase">
-                          {selectedFilter}
-                        </h4>
-                        
-                        {selectedFilter === 'Summary' && (
-                          <p className="text-gray-700">{app.summary}</p>
-                        )}
-                        
-                        {selectedFilter === 'Skill' && (
-                          <ul className="space-y-1">
-                            {app.skills.map((skill, idx) => (
-                              <li key={idx} className="text-gray-700">• {skill}</li>
-                            ))}
-                          </ul>
-                        )}
-                        
-                        {selectedFilter === 'Certification' && (
-                          <ul className="space-y-1">
-                            {app.certifications.map((cert, idx) => (
-                              <li key={idx} className="text-gray-700">• {cert}</li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {selectedFilter === 'Education' && (
-                          <ul className="space-y-1">
-                            {app.education.map((edu, idx) => (
-                              <li key={idx} className="text-gray-700">• {edu}</li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {selectedFilter === 'Work Experience' && (
-                          <ul className="space-y-1">
-                            {app.workExperience && app.workExperience.length > 0 ? (
-                              app.workExperience.map((exp, idx) => (
-                                <li key={idx} className="text-gray-700">• {exp}</li>
-                              ))
-                            ) : (
-                              <p className="text-gray-500 italic">No work experience listed</p>
-                            )}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-xl flex items-center justify-between">
-                      <button
-                        onClick={() => handleViewCV(app.id)}
-                        className="flex items-center gap-2 px-6 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors font-semibold"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z" />
-                        </svg>
-                        View CV
-                      </button>
-
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => handleReject(app.id)}
-                          className="px-8 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-semibold"
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => handleNextStage(app.id)}
-                          className="px-8 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-semibold"
-                        >
-                          {app.stage === 'Decision' ? 'Send Offer' : 'Next Stage'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-400 rounded-full" style={{ width: clPct + '%' }} />
             </div>
           </div>
-          
-          {/* Right Side - Calendar Widget (2 columns) */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-xl text-gray-900">Applications</h3>
-                <div className="flex gap-1">
-                  <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded">
-                    <FiChevronLeft />
-                  </button>
-                  <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded">
-                    <FiChevronRight />
-                  </button>
-                </div>
-              </div>
-              
-              <p className="text-sm text-gray-500 mb-4">{monthName}</p>
-              
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                  <div key={i} className="font-semibold text-gray-600 py-1">{day}</div>
-                ))}
-                
-                {days.map((day, index) => {
-                  const count = getApplicationCountForDate(day);
-                  const year = currentMonth.getFullYear();
-                  const month = currentMonth.getMonth();
-                  const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
-                  const isSelected = dateStr === selectedDate;
-                  
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleDateClick(day)}
-                      disabled={!day}
-                      className={`aspect-square flex items-center justify-center rounded-lg text-sm relative transition-all ${
-                        !day ? 'invisible' :
-                        isSelected ? 'bg-green-400 text-white font-bold' :
-                        count > 0 ? 'bg-green-50 text-gray-600 font-semibold hover:bg-green-100' :
-                        'text-gray-400 hover:bg-gray-100'
-                      }`}
-                    >
-                      {day}
-                      {count > 0 && !isSelected && (
-                        <span className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full"></span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+        )}
+      </div>
+    );
+  }
+  if (filter === 'Skill Gaps') return app.missingSkills?.length > 0 ? (
+    <div className="flex flex-wrap gap-1.5">
+      {app.missingSkills.map((s, i) => (
+        <span key={i} className="px-2.5 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-100">{s}</span>
+      ))}
+    </div>
+  ) : <p className="text-sm text-gray-400 italic">No skill gaps identified.</p>;
+  if (filter === 'Experience') return app.experience
+    ? <p className="text-sm text-gray-600 leading-relaxed">{app.experience}</p>
+    : <p className="text-sm text-gray-400 italic">No experience data available.</p>;
+  if (filter === 'Skill') return app.skills.length > 0 ? (
+    <div className="flex flex-wrap gap-1.5">
+      {app.skills.map((s, i) => (
+        <span key={i} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-100">{s}</span>
+      ))}
+    </div>
+  ) : <p className="text-sm text-gray-400 italic">No skills found.</p>;
+  if (filter === 'Certification') return app.certifications.length > 0 ? (
+    <ul className="space-y-1.5">
+      {app.certifications.map((c, i) => (
+        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+          <FiCheckCircle size={13} className="text-green-400 mt-0.5 flex-shrink-0" />{c}
+        </li>
+      ))}
+    </ul>
+  ) : <p className="text-sm text-gray-400 italic">No certifications found.</p>;
+  if (filter === 'Education') return app.education.length > 0 ? (
+    <ul className="space-y-1.5">
+      {app.education.map((e, i) => (
+        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+          <span className="w-1 h-1 rounded-full bg-gray-300 mt-2 flex-shrink-0" />{e}
+        </li>
+      ))}
+    </ul>
+  ) : <p className="text-sm text-gray-400 italic">No education found.</p>;
+  if (filter === 'Work Experience') return app.workExperience.length > 0 ? (
+    <ul className="space-y-1.5">
+      {app.workExperience.map((e, i) => (
+        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+          <span className="w-1 h-1 rounded-full bg-gray-300 mt-2 flex-shrink-0" />{e}
+        </li>
+      ))}
+    </ul>
+  ) : <p className="text-sm text-gray-400 italic">No work experience found.</p>;
+  return null;
+};
 
-              {selectedDate && (
-                <button
-                  onClick={() => setSelectedDate(null)}
-                  className="mt-4 w-full text-xs text-green-500 hover:text-green-400 font-medium"
+/* ─── Workflow Progress Line ─────────────────────────────────────────────────── */
+// Mirrors MyApplication's progress bar exactly — uses real API stages + workflow steps
+const WorkflowProgressLine = ({ appId, appStatus, workflowSteps, stages }) => {
+  if (!stages || stages.length === 0) return (
+    <div className="flex items-center justify-center py-6">
+      <p className="text-xs text-gray-400">Loading stages...</p>
+    </div>
+  );
+
+  // Resolve active index
+  const nameToIdx = {};
+  stages.forEach((s, i) => { nameToIdx[s.name.toLowerCase()] = i; });
+
+  const statusLower = appStatus?.toLowerCase() || '';
+  const LEGACY = {
+    applied: 0,
+    review:  Math.min(1, stages.length - 1),
+    interview: Math.min(2, stages.length - 1),
+    offer:   stages.length - 1,
+    hired:   stages.length - 1,
+    rejected: Math.max(stages.length - 2, 0),
+  };
+  let activeIdx = nameToIdx[statusLower] ?? LEGACY[statusLower] ?? 0;
+
+  const workflowMax = (workflowSteps || []).reduce((max, w) => {
+    const stepName = w.step?.toLowerCase().replace(/_/g, ' ') || '';
+    const idx = nameToIdx[stepName] ?? nameToIdx[w.step?.toLowerCase()] ?? 0;
+    return Math.max(max, idx);
+  }, 0);
+
+  activeIdx = Math.max(activeIdx, workflowMax);
+
+  return (
+    <div className="flex gap-2.5">
+      {stages.map((stage, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+          <div
+            className="w-full h-1.5 rounded-full transition-all duration-300"
+            style={{
+              background: i <= activeIdx ? stage.color : '#e5e7eb',
+              opacity:    i <= activeIdx ? 1 : 0.6,
+            }}
+          />
+          <span className="text-[10px] text-gray-500 text-center leading-tight whitespace-nowrap">
+            {stage.name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ─── Workflow Center Modal ──────────────────────────────────────────────────── */
+const WorkflowPanel = ({ app, onClose, stages, workflowSteps, loadingWorkflow }) => {
+  if (!app) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg modal-pop flex flex-col max-h-[80vh]">
+
+        {/* Modal header — fixed */}
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+              style={{ background: app.avatar ? 'transparent' : 'linear-gradient(135deg,#6ee7b7,#3b82f6)' }}
+            >
+              {app.avatar
+                ? <img src={app.avatar} alt={app.name} className="w-full h-full object-cover" />
+                : getInitials(app.name)
+              }
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{app.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{app.position}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
+            <FiX size={14} />
+          </button>
+        </div>
+
+        {/* Status + date row — fixed */}
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Current Status</p>
+            <StatusPill status={app.status} />
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Applied</p>
+            <p className="text-xs text-gray-600 font-medium">{app.displayDate || '—'}</p>
+          </div>
+        </div>
+
+        {/* Pipeline progress line — fixed */}
+        <div className="px-6 py-5 border-b border-gray-100 flex-shrink-0">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-4">Recruitment Pipeline</p>
+          {loadingWorkflow ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-gray-400">Loading pipeline...</span>
+            </div>
+          ) : stages.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">No pipeline stages defined.</p>
+          ) : (
+            <WorkflowProgressLine
+              appId={app.id}
+              appStatus={app.status}
+              workflowSteps={workflowSteps}
+              stages={stages}
+            />
+          )}
+        </div>
+
+        {/* Activity log — scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 hide-scroll">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-4">Activity Log</p>
+          {loadingWorkflow ? (
+            <div className="space-y-2.5">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-11 bg-gray-100 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : workflowSteps.length === 0 ? (
+            <div className="text-center py-8">
+              <FiGitBranch size={22} className="text-gray-200 mx-auto mb-2" />
+              <p className="text-xs text-gray-400">No workflow activity yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {workflowSteps.map((step, i) => {
+                const stageName    = step.step?.replace(/_/g, ' ') || 'Step';
+                const matchedStage = stages.find(s => s.name.toLowerCase() === stageName.toLowerCase());
+                const color        = matchedStage?.color || '#6ee7b7';
+                return (
+                  <div key={step.id || i} className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-gray-700 capitalize">{stageName}</p>
+                      {step.created_at && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {new Date(step.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                    <FiCheckCircle size={13} className="text-green-400 flex-shrink-0" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — fixed */}
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-white transition-colors font-medium"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Main Component ─────────────────────────────────────────────────────────── */
+const CandidateInfo = () => {
+  const navigate = useNavigate();
+
+  const [applications, setApplications]     = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState(null);
+  const [searchQuery, setSearchQuery]       = useState('');
+  const [selectedStage, setSelectedStage]   = useState('All');
+  const [selectedFilter, setSelectedFilter] = useState('Summary');
+  const [selectedDate, setSelectedDate]     = useState(null);
+  const [currentMonth, setCurrentMonth]     = useState(new Date());
+  const [workflowApp, setWorkflowApp]       = useState(null);
+  const [workflowSteps, setWorkflowSteps]   = useState([]);
+  const [loadingWorkflow, setLoadingWorkflow] = useState(false);
+  const [stages, setStages]                 = useState([]);
+  const [expandedId, setExpandedId]         = useState(null);
+
+  const stages_filter = ['All', 'applied', 'review', 'interview', 'assessment', 'offer', 'hired', 'rejected'];
+  const filterOptions = ['Summary', 'Smart Insight', 'Skill Gaps', 'Experience', 'Work Experience', 'Skill', 'Certification', 'Education'];
+
+  // Load workflow definitions once
+  useEffect(() => {
+    getWorkflowDefinitions()
+      .then(data => { if (data && data.length > 0) setStages(data); })
+      .catch(() => {});
+  }, []);
+
+  // Load applications
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true); setError(null);
+        const res  = await getAllApplicationsForRecruiter({ limit: 100 });
+        const rows = res.data || [];
+        const mapped = rows.map(app => {
+          const user     = app.candidate?.profile?.user;
+          const parsedAI = parseAI(app.ai_analysis);
+          const raw      = app.extracted_text || '';
+          const skills         = extractSection(raw, ['skills', 'technical skills', 'core skills', 'key skills']);
+          const education      = extractSection(raw, ['education', 'academic', 'qualification']);
+          const workExperience = extractSection(raw, ['experience', 'work experience', 'employment', 'work history']);
+          const certifications = extractSection(raw, ['certification', 'certifications', 'certificates', 'licenses']);
+          return {
+            id:       app.id,
+            name:     user ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() || user.email || 'Unknown' : 'Unknown',
+            position: app.job?.title || 'Unknown Position',
+            email:    user?.email || '',
+            appliedDate:  app.applied_at ? app.applied_at.split('T')[0] : '',
+            displayDate:  app.applied_at ? new Date(app.applied_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+            status: app.status || 'applied',
+            stage:  app.status || 'applied',
+            summary:        getSummary(raw),
+            skills:         skills.length ? skills : asList(parsedAI?.skills),
+            education:      education.length ? education : asList(parsedAI?.education),
+            workExperience: workExperience.length ? workExperience : asList(parsedAI?.workExperience),
+            certifications: certifications.length ? certifications : asList(parsedAI?.certifications),
+            matchScore:       typeof parsedAI?.matchScore === 'number' ? parsedAI.matchScore : 0,
+            coverLetterScore: typeof parsedAI?.coverLetterScore === 'number' ? parsedAI.coverLetterScore : 0,
+            missingSkills:    asList(parsedAI?.missingSkills),
+            experience:       parsedAI?.experience || '',
+            avatar:           app.candidate?.profile?.avatarUrl || null,
+          };
+        });
+        setApplications(mapped);
+      } catch (e) { setError('Failed to load applications.'); console.error(e); }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  // Open workflow panel — fetch real steps
+  const openWorkflow = async (app) => {
+    setWorkflowApp(app);
+    setWorkflowSteps([]);
+    setLoadingWorkflow(true);
+    try {
+      const steps = await getWorkflowByApplication(app.id);
+      setWorkflowSteps(steps || []);
+    } catch { setWorkflowSteps([]); }
+    finally { setLoadingWorkflow(false); }
+  };
+
+  const closeWorkflow = () => { setWorkflowApp(null); setWorkflowSteps([]); };
+
+  /* Calendar */
+  const getDays = (date) => {
+    const y = date.getFullYear(), m = date.getMonth();
+    const first = new Date(y, m, 1).getDay(), total = new Date(y, m + 1, 0).getDate();
+    return [...Array(first).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
+  };
+  const countOnDate = (day) => {
+    if (!day) return 0;
+    const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    return applications.filter(a => a.appliedDate === ds).length;
+  };
+  const clickDate = (day) => {
+    if (!day) return;
+    const ds = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    setSelectedDate(p => p === ds ? null : ds);
+  };
+
+  /* Filter */
+  const filtered = applications.filter(app => {
+    const q = searchQuery.toLowerCase();
+    return (app.name.toLowerCase().includes(q) || app.position.toLowerCase().includes(q) || app.email.toLowerCase().includes(q))
+      && (selectedStage === 'All' || app.stage === selectedStage)
+      && (!selectedDate || app.appliedDate === selectedDate);
+  });
+
+  /* Actions */
+  const handleViewCV = (id) => navigate('/view-cv/' + id);
+  const handleReject = async (id) => {
+    const app = applications.find(a => a.id === id);
+    if (!window.confirm(`Reject ${app.name}'s application?`)) return;
+    try {
+      await updateApplicationStatus(id, { status: 'rejected' });
+      setApplications(prev => prev.map(a => a.id === id ? { ...a, status: 'rejected', stage: 'rejected' } : a));
+    } catch (e) { alert(e?.response?.data?.error || 'Failed.'); }
+  };
+  const handleNext = async (id) => {
+    const app = applications.find(a => a.id === id);
+    const map = { applied: 'review', review: 'interview', interview: 'assessment', assessment: 'offer', offer: 'hired' };
+    if (app.stage === 'hired') return navigate('/send-offer/' + id, { state: { candidate: app } });
+    const next = map[app.stage]; if (!next) return;
+    try {
+      await updateApplicationStatus(id, { status: next });
+      setApplications(prev => prev.map(a => a.id === id ? { ...a, status: next, stage: next } : a));
+    } catch (e) { alert(e?.response?.data?.error || 'Failed.'); }
+  };
+
+  /* Stats */
+  const stats = {
+    total:    applications.length,
+    active:   applications.filter(a => ['review', 'interview', 'assessment'].includes(a.status)).length,
+    hired:    applications.filter(a => a.status === 'hired').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
+  };
+
+  const positionMap = applications.reduce((acc, a) => {
+    if (a.position) acc[a.position] = (acc[a.position] || 0) + 1;
+    return acc;
+  }, {});
+  const topPositions = Object.entries(positionMap)
+    .map(([name, count]) => ({ name, count, pct: Math.round(count / applications.length * 100) }))
+    .sort((a, b) => b.count - a.count);
+
+  const days      = getDays(currentMonth);
+  const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="min-h-screen bg-[#F9FAFB] flex" style={{ fontFamily: "'Roboto', sans-serif" }}>
+      <style>{`
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes modalPop {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-pop { animation: modalPop 0.18s cubic-bezier(0.22,1,0.36,1); }
+        @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-backdrop { animation: backdropIn 0.15s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.15s ease; }
+      `}</style>
+
+      <SideBar />
+
+      {/* Workflow panel */}
+      {workflowApp && (
+        <WorkflowPanel
+          app={workflowApp}
+          onClose={closeWorkflow}
+          stages={stages}
+          workflowSteps={workflowSteps}
+          loadingWorkflow={loadingWorkflow}
+        />
+      )}
+
+      <main className="flex-1 ml-[227px] flex flex-col h-screen overflow-hidden">
+
+        {/* ── Header — matches JobList / ViewJobs style ── */}
+        <div className="flex-shrink-0 px-8 pt-8 pb-0 bg-[#F9FAFB]">
+          <div className="flex items-start justify-between mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">Manage Applications</h1>
+            <div className="flex items-center gap-6 mt-1">
+              {[
+                { icon: <FiUsers size={14} />,       label: 'Total',    val: stats.total,    color: 'text-gray-500' },
+                { icon: <FiTrendingUp size={14} />,  label: 'Active',   val: stats.active,   color: 'text-blue-500' },
+                { icon: <FiCheckCircle size={14} />, label: 'Hired',    val: stats.hired,    color: 'text-green-500' },
+                { icon: <FiAlertCircle size={14} />, label: 'Rejected', val: stats.rejected, color: 'text-red-400' },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <span className={s.color}>{s.icon}</span>
+                  <span className="text-sm font-semibold text-gray-900">{s.val}</span>
+                  <span className="text-xs text-gray-400">{s.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-0.5 w-full bg-green-500 rounded" />
+        </div>
+
+        {/* ── Body ── */}
+        <div className="flex flex-1 overflow-y-auto hide-scroll">
+
+          {/* LEFT: cards */}
+          <div className="flex-1 flex flex-col px-8 py-6 overflow-y-auto hide-scroll">
+
+            {/* Filter bar */}
+            <div className="bg-white rounded-xl border border-gray-200 p-3 mb-4 flex items-center gap-3 flex-wrap shadow-sm">
+              <div className="relative flex-1 min-w-[200px]">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Search name, position or email..."
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-green-400 focus:bg-white transition-colors placeholder-gray-400"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
+                <FiFilter size={11} /> Stage
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedStage}
+                  onChange={e => setSelectedStage(e.target.value)}
+                  className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-green-400 cursor-pointer text-gray-700"
                 >
+                  {stages_filter.map(s => (
+                    <option key={s} value={s}>{s === 'All' ? 'All Stages' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                  ))}
+                </select>
+                <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+              </div>
+              <div className="text-xs text-gray-400 font-medium">View</div>
+              <div className="relative">
+                <select
+                  value={selectedFilter}
+                  onChange={e => setSelectedFilter(e.target.value)}
+                  className="appearance-none pl-3 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-green-400 cursor-pointer text-gray-700"
+                >
+                  {filterOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+                <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+              </div>
+            </div>
+
+            {/* Count */}
+            <div className="flex items-center justify-between mb-3 px-0.5">
+              <p className="text-xs text-gray-500">
+                <strong className="text-gray-700">{filtered.length}</strong> of <strong className="text-gray-700">{applications.length}</strong> applications
+                {selectedDate && <span className="text-gray-400"> · filtered by date</span>}
+              </p>
+              {selectedDate && (
+                <button onClick={() => setSelectedDate(null)} className="text-xs text-green-600 hover:text-green-700 font-medium underline underline-offset-2">
                   Clear date filter
                 </button>
               )}
             </div>
 
-            {/* Top Products Style Stats */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-              <h3 className="font-bold text-gray-900 mb-4">
-                Top Positions
-              </h3>
-              {finalStats.length === 0 ? (
-                <p className="text-gray-500 text-sm">
-                  No applications yet
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {finalStats.map((item, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600">
-                          {item.name}
-                        </span>
+            {/* Cards list */}
+            <div className="flex-1 overflow-y-auto hide-scroll space-y-2.5 pb-6">
+              {loading && (
+                <div className="bg-white rounded-xl border border-gray-200 py-16 text-center shadow-sm">
+                  <div className="w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-gray-400">Loading applications...</p>
+                </div>
+              )}
+              {!loading && error && (
+                <div className="bg-white rounded-xl border border-red-100 py-16 text-center shadow-sm">
+                  <FiAlertCircle size={24} className="text-red-400 mx-auto mb-2" />
+                  <p className="text-sm text-red-500">{error}</p>
+                </div>
+              )}
+              {!loading && !error && filtered.length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 py-16 text-center shadow-sm">
+                  <FiUsers size={28} className="text-gray-200 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-gray-500">No applications found</p>
+                  <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters</p>
+                </div>
+              )}
 
-                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                          {item.percentage}%
-                        </span>
+              {!loading && !error && filtered.map(app => {
+                const isExpanded = expandedId === app.id;
+                const isWfOpen   = workflowApp?.id === app.id;
+
+                return (
+                  <div
+                    key={app.id}
+                    className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all ${isWfOpen ? 'border-green-300' : 'border-gray-200'}`}
+                  >
+                    {/* Card body */}
+                    <div className="px-5 py-4">
+                      <div className="flex items-start gap-4">
+                        {/* Avatar */}
+                        <div
+                          className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                          style={{ background: app.avatar ? 'transparent' : 'linear-gradient(135deg,#6ee7b7,#3b82f6)' }}
+                        >
+                          {app.avatar
+                            ? <img src={app.avatar} alt={app.name} className="w-full h-full object-cover" />
+                            : getInitials(app.name)
+                          }
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 flex-wrap mb-0.5">
+                            <span className="text-sm font-semibold text-gray-900">{app.name}</span>
+                            <StatusPill status={app.status} />
+                          </div>
+                          <p className="text-xs text-gray-500 mb-2">{app.position}</p>
+                          <div className="flex items-center gap-5 text-xs text-gray-400">
+                            <span className="flex items-center gap-1.5"><FiMail size={10} />{app.email}</span>
+                            <span className="flex items-center gap-1.5"><FiCalendar size={10} />Applied {app.displayDate}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="w-full bg-gray-100 rounded-full h-2 relative">
-                        <div
-                          className={`${item.color} h-2 rounded-full transition-all duration-500`}
-                          style={{ width: `${item.percentage}%` }}
-                          title={`${item.count} candidate(s) applied`}
-                        ></div>
+                      {/* Expanded section */}
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 fade-in">
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">{selectedFilter}</p>
+                          <SectionContent app={app} filter={selectedFilter} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action bar */}
+                    <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleViewCV(app.id)}
+                          className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 transition-all"
+                        >
+                          <FiFileText size={12} /> View CV
+                        </button>
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : app.id)}
+                          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                            isExpanded ? 'bg-gray-200 text-gray-700 border-gray-200' : 'text-gray-500 border-transparent hover:bg-white hover:border-gray-200'
+                          }`}
+                        >
+                          <FiChevronDown size={11} className={`transition-transform duration-150 ${isExpanded ? 'rotate-180' : ''}`} />
+                          {selectedFilter}
+                        </button>
+                        <button
+                          onClick={() => isWfOpen ? closeWorkflow() : openWorkflow(app)}
+                          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${
+                            isWfOpen
+                              ? 'bg-green-500 text-white border-green-500'
+                              : 'text-gray-500 border-transparent hover:bg-white hover:border-gray-200'
+                          }`}
+                        >
+                          <FiGitBranch size={12} />
+                          {isWfOpen ? 'Workflow Open' : 'Workflow'}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {app.status === 'hired' && (
+                          <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+                            <FiCheckCircle size={12} /> Hired
+                          </span>
+                        )}
+                        {app.status === 'rejected' && (
+                          <span className="text-xs text-red-400 font-medium">Rejected</span>
+                        )}
+                        {app.status !== 'rejected' && app.status !== 'hired' && (
+                          <>
+                            <button
+                              onClick={() => handleReject(app.id)}
+                              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => handleNext(app.id)}
+                              className="text-xs font-semibold px-4 py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors shadow-sm"
+                            >
+                              {app.stage === 'offer' ? 'Send Offer →' : 'Next Stage →'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT: sidebar */}
+          <div className="w-64 flex-shrink-0 border-l border-gray-200 bg-white overflow-y-auto hide-scroll p-5 space-y-6">
+
+            {/* Calendar */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-700">{monthName}</p>
+                <div className="flex gap-0.5">
+                  <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()-1))}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                    <FiChevronLeft size={12} />
+                  </button>
+                  <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1))}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors">
+                    <FiChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-0.5 text-center">
+                {['S','M','T','W','T','F','S'].map((d,i) => (
+                  <div key={i} className="text-[9px] font-semibold text-gray-300 pb-1.5 uppercase">{d}</div>
+                ))}
+                {days.map((day, i) => {
+                  const cnt = countOnDate(day);
+                  const ds  = day ? `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` : null;
+                  const sel = ds === selectedDate;
+                  return (
+                    <button key={i} onClick={() => clickDate(day)} disabled={!day}
+                      className={`relative aspect-square flex items-center justify-center rounded-md text-[11px] transition-all ${
+                        !day ? 'invisible' :
+                        sel  ? 'bg-green-500 text-white font-semibold' :
+                        cnt > 0 ? 'bg-green-50 text-green-700 font-medium hover:bg-green-100' :
+                                  'text-gray-400 hover:bg-gray-100'
+                      }`}>
+                      {day}
+                      {cnt > 0 && !sel && <span className="absolute top-0.5 right-0.5 w-1 h-1 bg-green-400 rounded-full" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedDate && (
+                <button onClick={() => setSelectedDate(null)} className="mt-3 w-full py-1.5 text-xs text-green-600 font-medium border border-green-100 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                  Clear date filter
+                </button>
+              )}
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Pipeline by stage */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Pipeline</p>
+              <div className="space-y-1">
+                {Object.entries(STATUS).map(([key, cfg]) => {
+                  const count    = applications.filter(a => a.status === key).length;
+                  const isActive = selectedStage === key;
+                  return (
+                    <button key={key}
+                      onClick={() => setSelectedStage(isActive ? 'All' : key)}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors text-left ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+                      <span className="text-xs text-gray-600 flex-1">{cfg.label}</span>
+                      <span className="text-xs font-semibold text-gray-900 tabular-nums">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Top Positions */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Top Positions</p>
+              {topPositions.length === 0 ? (
+                <p className="text-xs text-gray-400">No data yet.</p>
+              ) : (
+                <div className="space-y-3.5">
+                  {topPositions.slice(0, 5).map((item, i) => (
+                    <div key={i}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-gray-600 truncate flex-1 mr-2">{item.name}</span>
+                        <span className="text-[11px] font-semibold text-gray-600 flex-shrink-0">{item.pct}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1">
+                        <div className="h-1 rounded-full bg-green-400 transition-all duration-500" style={{ width: item.pct + '%' }} />
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
           </div>
         </div>
       </main>
@@ -698,9 +845,3 @@ const CandidateInfo = () => {
 };
 
 export default CandidateInfo;
-
-
-
-
-
-

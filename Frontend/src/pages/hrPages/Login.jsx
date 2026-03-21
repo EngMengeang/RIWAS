@@ -5,6 +5,10 @@ import { HiMail } from "react-icons/hi";
 import { RiLockPasswordFill } from "react-icons/ri";
 import { FcGoogle } from "react-icons/fc";
 import { signIn } from "../../server/authAPI";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/600.css";
+import "@fontsource/roboto/700.css";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,31 +23,23 @@ const Login = () => {
     setLoading(true);
     try {
       const res = await signIn(formData);
-      
-      // Validate response data
       if (!res.data) {
         throw new Error("No data received from server");
       }
 
       const { user, accessToken, refreshToken } = res.data;
 
-      // Validate required fields
       if (!user || !accessToken || !refreshToken) {
         throw new Error("Invalid response data from server");
       }
 
-      // Store user data and tokens
       localStorage.setItem("currentUser", JSON.stringify(user));
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
 
       alert(`Welcome back, ${user.firstName}!`);
       console.log("User data:", user);
-
-      localStorage.setItem("id", user.id)
-      
-      
-      // Navigate based on role
+      localStorage.setItem("id", user.id);
       user.role === "recruiter" ? navigate("/job-listing") : navigate("/view-jobs");
     } catch (err) {
       console.error("Login error:", err);
@@ -58,12 +54,12 @@ const Login = () => {
   const handleMicrosoftLogin = () => console.log("Microsoft login clicked");
 
   return (
-    <div className="w-full min-h-screen flex">
+    <div className="w-full min-h-screen flex" style={{ fontFamily: "'Roboto', sans-serif" }}>
       {/* Left Section */}
       <div className="flex-1 flex flex-col m-2">
         <div className="p-4">
           <Link to="/admin-home">
-            <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base font-sans hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
+            <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
               <IoIosArrowBack size={20} /> Back
             </button>
           </Link>
@@ -93,7 +89,7 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
@@ -113,7 +109,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
