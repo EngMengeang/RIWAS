@@ -3,6 +3,8 @@ import {
   createTemplate,
   setActiveTemplate,
   getActiveTemplate,
+  updateTemplate,
+  deleteTemplate,
 } from "../controllers/scoretemplateController.js";
 
 import { authenticate, authorize } from "../middlewares/auth.js";
@@ -32,6 +34,22 @@ router.get(
   authenticate,
   authorize(USER_ROLES.RECRUITER),
   getActiveTemplate
+);
+
+//Update template
+router.put(
+  "/:templateId",
+  authenticate,
+  authorize(USER_ROLES.RECRUITER),
+  updateTemplate
+);
+
+// Delete template
+router.delete(
+  "/:templateId",
+  authenticate,
+  authorize(USER_ROLES.RECRUITER),
+  deleteTemplate
 );
 
 export default router;

@@ -3,6 +3,9 @@ import {
   createScoreAttribute,
   getAttributesByTemplate,
   updateActiveAttributes,
+  updateScoreAttribute,
+  deleteScoreAttribute,
+
 } from "../controllers/scoreattributeController.js";
 
 import { authenticate, authorize } from "../middlewares/auth.js";
@@ -32,6 +35,22 @@ router.put(
   authenticate,
   authorize(USER_ROLES.RECRUITER),
   updateActiveAttributes
+);
+
+// Update attribute
+router.put(
+  "/:id",
+  authenticate,
+  authorize(USER_ROLES.RECRUITER),
+  updateScoreAttribute
+);
+
+// Delete attribute
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(USER_ROLES.RECRUITER),
+  deleteScoreAttribute
 );
 
 export default router;

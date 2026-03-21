@@ -31,6 +31,11 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userresumeRoutes from "./routes/userresumeRoutes.js"; 
 import notificationRoutes from "./routes/notificationRoutes.js";
 
+// Work Flow definition routes
+import workflowdefinitionRoutes from "./routes/workflowdefinitionRoutes.js";
+
+// Import Seeder 
+import { seedWorkflowDefinitions } from "./seeders/Workflowdefinitionseeder.js";
 // Middleware imports
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { requestValidator } from "./middlewares/requestValidator.js";
@@ -101,6 +106,8 @@ app.use("/api/dashboard", dashboardRoutes);
 // user resume routes
 app.use("/api/resumes", userresumeRoutes);
 app.use("/api/notifications", notificationRoutes);
+// Work Flow definition routes
+app.use("/api/workflow-definitions", workflowdefinitionRoutes);
 // --------------------
 // 404 Handler
 // --------------------
@@ -126,6 +133,7 @@ app.use(errorHandler);
       // In development, auto-sync models (alter tables if needed)
       await sequelize.sync({ alter: true });
       console.log("Database synchronized (alter).");
+      await seedWorkflowDefinitions();
     } else {
       // In production, never auto-sync. Use migrations instead.
       console.log(
