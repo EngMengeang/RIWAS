@@ -4,6 +4,10 @@ import { IoIosArrowBack } from "react-icons/io";
 import { MdEmail, MdLock, MdPerson } from "react-icons/md";
 import { FcGoogle } from "react-icons/fc";
 import { signUp } from "../../server/authAPI";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/600.css";
+import "@fontsource/roboto/700.css";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -24,7 +28,6 @@ const SignUp = () => {
       return;
     }
 
-    // Split fullName into firstName and lastName
     const names = formData.fullName.trim().split(" ");
     const firstName = names[0];
     const lastName = names.slice(1).join(" ") || "_";
@@ -34,7 +37,7 @@ const SignUp = () => {
       lastName,
       email: formData.email,
       password: formData.password,
-      role: "candidate", // default role
+      role: "candidate",
     };
 
     try {
@@ -46,7 +49,7 @@ const SignUp = () => {
       localStorage.setItem("refreshToken", refreshToken);
 
       alert(`Welcome, ${user.firstName}!`);
-      navigate("/uploadcv"); // candidate default page
+      navigate("/uploadcv");
     } catch (err) {
       alert(err.response?.data?.errors?.[0]?.message || "Sign up failed");
     }
@@ -56,12 +59,12 @@ const SignUp = () => {
   const handleMicrosoftLogin = () => console.log("Microsoft login clicked");
 
   return (
-    <div className="w-full min-h-screen flex">
+    <div className="w-full min-h-screen flex" style={{ fontFamily: "'Roboto', sans-serif" }}>
       {/* Left Section */}
       <div className="flex-1 flex flex-col m-2">
         <div className="p-4">
           <Link to="/">
-            <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base font-sans hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
+            <button className="flex items-center gap-2 border border-gray-300 bg-white rounded-full px-6 py-3 text-base hover:bg-gray-100 hover:-translate-x-0.5 transition-all">
               <IoIosArrowBack size={20} /> Back
             </button>
           </Link>
@@ -99,7 +102,7 @@ const SignUp = () => {
                   value={formData.fullName}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
@@ -122,7 +125,7 @@ const SignUp = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
@@ -145,7 +148,7 @@ const SignUp = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
@@ -168,7 +171,7 @@ const SignUp = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)] font-sans"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base transition-all focus:outline-none focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(66,133,244,0.1)]"
                 />
               </div>
             </div>
