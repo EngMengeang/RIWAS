@@ -113,7 +113,7 @@ export const getCoverLetterUrl = async (id) => {
 
 // UPDATED FUNCTION GET APPLICATIONS BY JOB ID (recruiter)
 export const getApplicationsByJob = async (jobId, { page = 1, limit = 100, status = "" } = {}) => {
-  const params = { page, limit };
+  const params = { page, limit, _ts: Date.now() };
   if (status) params.status = status;
   const res = await API.get(`/jobapplications/job/${jobId}`, { params });
   return res.data;
@@ -125,7 +125,7 @@ export const getApplicationsByJob = async (jobId, { page = 1, limit = 100, statu
 // GET ALL APPLICATIONS FOR RECRUITER (all jobs they posted)
 // -----------------------------
 export const getAllApplicationsForRecruiter = async ({ page = 1, limit = 100, status = "" } = {}) => {
-  const params = { page, limit };
+  const params = { page, limit, _ts: Date.now() };
   if (status) params.status = status;
   const res = await API.get("/jobapplications/recruiter/all", { params });
   return res.data;

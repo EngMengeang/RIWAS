@@ -79,9 +79,9 @@ export default function ManageApplication() {
   const [success, setSuccess]           = useState(null);
   const [selectedApp, setSelectedApp]   = useState(null);
 
-  const loadApplications = async () => {
+  const loadApplications = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
       const jobsRes = await getAllJobs({ limit: 100 });
       const jobs    = jobsRes.data?.data || jobsRes.data || [];
@@ -97,7 +97,7 @@ export default function ManageApplication() {
     } catch {
       setError("Failed to load applications.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -105,24 +105,44 @@ export default function ManageApplication() {
 
   const flash = (msg) => { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); };
 
+  const setLocalStatus = (id, status) => {
+    setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+  };
+
   const handleNextStep = async (app) => {
     const next = getNextStatus(app.status);
     if (!next) return;
+    const previous = app.status;
+    setError(null);
+    setLocalStatus(app.id, next);
     try {
       await updateApplicationStatus(app.id, { status: next });
       flash(`Moved to "${STATUS_LABELS[next]}"`);
-      await loadApplications();
-    } catch { setError("Failed to update status."); }
+    } catch (err) {
+      setLocalStatus(app.id, previous);
+      setError(err?.response?.data?.error || err?.response?.data?.message || "Failed to update status.");
+      return;
+    }
+
+    loadApplications({ silent: true }).catch(() => {});
   };
 
   const handleReject = async (app) => {
     const name = app.candidate?.profile?.user?.firstName || "this candidate";
     if (!window.confirm(`Reject ${name}?`)) return;
+    const previous = app.status;
+    setError(null);
+    setLocalStatus(app.id, "rejected");
     try {
       await updateApplicationStatus(app.id, { status: "rejected" });
       flash("Application rejected.");
-      await loadApplications();
-    } catch { setError("Failed to reject."); }
+    } catch (err) {
+      setLocalStatus(app.id, previous);
+      setError(err?.response?.data?.error || err?.response?.data?.message || "Failed to reject.");
+      return;
+    }
+
+    loadApplications({ silent: true }).catch(() => {});
   };
 
   const filteredApps = applications.filter((app) => {

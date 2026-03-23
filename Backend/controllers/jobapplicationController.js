@@ -256,10 +256,20 @@ export const updateApplicationStatus = asyncHandler(async (req, res) => {
   // Update JobApplication
   await application.update(updates);
 
-  // Log status history
-  const recruiter = await Recruiter.findOne({ where: { user_id: req.user.id } });
-  if (!recruiter)
-    return res.status(400).json({ error: "Recruiter record not found. Cannot log history." });
+  // Resolve recruiter via profile (Recruiter is keyed by profile_id, not user_id)
+  const recruiterProfile = await Profile.findOne({
+    where: { user_id: req.user.id, role: USER_ROLES.RECRUITER },
+  });
+
+  if (!recruiterProfile)
+    return res.status(400).json({ error: "Recruiter profile not found. Cannot log history." });
+
+  let recruiter = await Recruiter.findOne({ where: { profile_id: recruiterProfile.id } });
+  if (!recruiter) {
+    recruiter = await Recruiter.create({
+      profile_id: recruiterProfile.id,
+    });
+  }
 
   await ApplicationStatusHistory.create({
     application_id: application.id,
