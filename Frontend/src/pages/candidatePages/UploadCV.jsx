@@ -35,9 +35,10 @@ const UploadCV = () => {
     setUploading(true);
     try {
       await uploadResume(selectedFile);
-      alert("CV uploaded successfully!");
       setSelectedFile(null);
-      navigate("/cv");
+      // Navigate to notifications and auto-open the Recommended tab
+      // so the candidate immediately sees ML-based job matches from their resume
+      navigate("/notifications", { state: { tab: 'recommended' } });
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to upload CV");

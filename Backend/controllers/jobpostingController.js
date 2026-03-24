@@ -3,7 +3,7 @@ import { User } from "../models/User.js";
 import { JobApplication } from "../models/JobApplication.js";
 import { asyncHandler } from "../middlewares/errorHandler.js";
 import { deleteImage } from "../utils/cloudinary.js";
-import { Op } from "sequelize";
+import { Op, literal } from "sequelize";
 import { JOB_TYPE, JOB_STATUS , NOTIFICATION_TYPES} from "../config/constants.js";
 import { createNotification } from "../services/notificationService.js";
 
@@ -54,8 +54,8 @@ export const createJob = asyncHandler(async (req, res) => {
 
    if (job.status === JOB_STATUS.PUBLISHED) {
     await createNotification({
-      senderId: req.user.profile.id,
-      recipientId: req.user.profile.id,
+      senderId: req.user.id,
+      recipientId: req.user.id,
       type: NOTIFICATION_TYPES.JOB_PUBLISHED,
       content: `Your job "${job.title}" has been published.`,
     });
@@ -82,6 +82,18 @@ export const getAllJobs = asyncHandler(async (req, res) => {
     where,
     limit: Number(limit),
     offset,
+    attributes: {
+      include: [
+        [
+          literal(`(SELECT COUNT(*) FROM "JobApplications" ja WHERE ja.job_id = "JobPosting".id)`),
+          "totalApplications",
+        ],
+        [
+          literal(`(SELECT COUNT(*) FROM "JobApplications" ja WHERE ja.job_id = "JobPosting".id AND ja.status = 'hired')`),
+          "hiredCount",
+        ],
+      ],
+    },
     include: [
       {
         model: User,
@@ -174,8 +186,8 @@ export const updateJob = asyncHandler(async (req, res) => {
     data.publishedAt = new Date();
 
     await createNotification({
-      senderId: req.user.profile.id,
-      recipientId: req.user.profile.id,
+      senderId: req.user.id,
+      recipientId: req.user.id,
       type: NOTIFICATION_TYPES.JOB_PUBLISHED,
       content: `Your job "${job.title}" has been published.`,
     });
@@ -183,8 +195,8 @@ export const updateJob = asyncHandler(async (req, res) => {
 
   if (data.status === JOB_STATUS.CLOSED) {
     await createNotification({
-      senderId: req.user.profile.id,
-      recipientId: req.user.profile.id,
+      senderId: req.user.id,
+      recipientId: req.user.id,
       type: NOTIFICATION_TYPES.JOB_CLOSED,
       content: `Your job "${job.title}" has been closed.`,
     });

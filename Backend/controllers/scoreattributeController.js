@@ -38,3 +38,38 @@ export const updateActiveAttributes = asyncHandler(async (req, res) => {
   const updatedAttributes = await ScoreAttribute.findAll({ where: { template_id } });
   res.json({ message: "Scoring template updated", data: updatedAttributes });
 });
+
+// Update Score Attribute 
+// Update attribute
+export const updateScoreAttribute = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const attribute = await ScoreAttribute.findByPk(id);
+
+  if (!attribute) {
+    return res.status(404).json({ message: "Attribute not found" });
+  }
+
+  await attribute.update(req.body);
+
+  res.json({
+    message: "Attribute updated",
+    data: attribute,
+  });
+});
+
+// Delete Score Attribute
+// Delete attribute
+export const deleteScoreAttribute = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const attribute = await ScoreAttribute.findByPk(id);
+
+  if (!attribute) {
+    return res.status(404).json({ message: "Attribute not found" });
+  }
+
+  await attribute.destroy();
+
+  res.json({ message: "Attribute deleted successfully" });
+});

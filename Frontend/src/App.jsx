@@ -24,7 +24,9 @@ import JobDetails from "./pages/candidatePages/JobDetails";
 import ApplyJob from "./pages/candidatePages/ApplyJob";
 import ApplicationPage from "./pages/candidatePages/ApplicationPage";
 import Notifications from "./pages/candidatePages/Notifications";
-
+import ViewCV from "./pages/hrPages/ViewCV";
+import ViewCVCandidate from "./pages/candidatePages/Viewcvcandidate";
+import EditJob from "./pages/HRPages/EditJob";
 function App() {
   return (
     <BrowserRouter>
@@ -46,12 +48,15 @@ function App() {
         <Route path="/post-job" element={<PostJob />} />
         <Route path="/manage-application" element={<ManageApplication />} />
         <Route path="/candidate-information" element={<CandidateInfo />} />
+        <Route path="/edit-job/:id" element={<EditJob />} />
         
         {/* Configuration Routes - Exact match for ProfilePage links */}
         <Route path="/recruitment-workflow" element={<RecruitmentWorkflow />} />
         <Route path="/matrix-page" element={<MatrixPage />} />
         <Route path="/edit-profile" element={<EditProfile />} />
         <Route path="/job-detail/:id" element={<JobDetailView />} />
+        <Route path="/view-cv/:id" element={<ViewCV />} />
+    
 
          {/* Sana Candidate Routes */}
         <Route path="/landing" element={<LandingPage />} />
@@ -63,6 +68,7 @@ function App() {
         <Route path="/apply-job/:jobId" element={<Layout><ApplyJob /></Layout>} />
         <Route path="/application" element={<Layout><ApplicationPage /></Layout>} />
         <Route path="/notifications" element={<Layout><Notifications /></Layout>} />
+        <Route path="/my-cv/:id" element={<Layout><ViewCVCandidate /></Layout>} />
       
       </Routes>
     </BrowserRouter>

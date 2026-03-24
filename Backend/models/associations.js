@@ -14,6 +14,8 @@ import { UserSkill } from "./UserSkill.js";
 import { MatrixScore } from "./MatrixScore.js";
 import { ScoreAttribute } from "./ScoreAttribute.js";
 import { ApplicationStatusHistory } from "./ApplicationStatusHistory.js";
+import { ScoreTemplate } from "./Scoretemplate.js";
+import { UserResume } from "./UserResume.js";
 
 export function initializeAssociations() {
   // ---------------------------
@@ -104,6 +106,12 @@ export function initializeAssociations() {
   Notification.belongsTo(User, { foreignKey: "recipient_id", as: "recipient" });
 
   // ---------------------------
+  // JobApplication → Notification (1:N)
+  // ---------------------------
+  JobApplication.hasMany(Notification, { foreignKey: "related_application_id", as: "notifications", onDelete: "CASCADE" });
+  Notification.belongsTo(JobApplication, { foreignKey: "related_application_id", as: "application" });
+
+  // ---------------------------
   // User ↔ Skill (M:N)
   // ---------------------------
   User.belongsToMany(Skill, { through: UserSkill, as: "skills", foreignKey: "user_id" });
@@ -125,3 +133,12 @@ export function initializeAssociations() {
   ScoreAttribute.hasMany(MatrixScore, { foreignKey: "attribute_id", as: "matrixScores", onDelete: "CASCADE" });
   MatrixScore.belongsTo(ScoreAttribute, { foreignKey: "attribute_id", as: "attribute" });
 }
+  // Updated associations to include ScoreTemplate and UserResume
+
+  // ScoreTemplate → ScoreAttribute (1:N)
+  ScoreTemplate.hasMany(ScoreAttribute, { foreignKey: "template_id", as: "attributes", onDelete: "CASCADE" });
+  ScoreAttribute.belongsTo(ScoreTemplate, { foreignKey: "template_id", as: "template" });
+
+  // User → UserResume (1:N)
+  User.hasMany(UserResume, { foreignKey: "user_id", as: "resumes", onDelete: "CASCADE" });
+  UserResume.belongsTo(User, { foreignKey: "user_id", as: "user" });

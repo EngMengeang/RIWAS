@@ -256,10 +256,20 @@ export const updateApplicationStatus = asyncHandler(async (req, res) => {
   // Update JobApplication
   await application.update(updates);
 
-  // Log status history
-  const recruiter = await Recruiter.findOne({ where: { user_id: req.user.id } });
-  if (!recruiter)
-    return res.status(400).json({ error: "Recruiter record not found. Cannot log history." });
+  // Resolve recruiter via profile (Recruiter is keyed by profile_id, not user_id)
+  const recruiterProfile = await Profile.findOne({
+    where: { user_id: req.user.id, role: USER_ROLES.RECRUITER },
+  });
+
+  if (!recruiterProfile)
+    return res.status(400).json({ error: "Recruiter profile not found. Cannot log history." });
+
+  let recruiter = await Recruiter.findOne({ where: { profile_id: recruiterProfile.id } });
+  if (!recruiter) {
+    recruiter = await Recruiter.create({
+      profile_id: recruiterProfile.id,
+    });
+  }
 
   await ApplicationStatusHistory.create({
     application_id: application.id,
@@ -428,4 +438,96 @@ export const getCoverLetter = asyncHandler(async (req, res) => {
     console.error("Failed to get cover letter URL:", err.message);
     res.status(500).json({ error: "Failed to load cover letter" });
   }
+});
+
+// Get all applications for a specific job (/HR only)
+
+export const getApplicationsByJob = asyncHandler(async (req, res) => {
+  const { jobId } = req.params;
+  const { page = 1, limit = 10, status } = req.query;
+  const offset = (page - 1) * limit;
+
+  // Check job exists and requester owns it
+  const job = await JobPosting.findByPk(jobId);
+  if (!job) return res.status(404).json({ error: "Job not found" });
+  if (job.postedBy !== req.user.id)
+    return res.status(403).json({ error: "Not authorized" });
+
+  const where = { job_id: jobId };
+  if (status) where.status = status;
+
+  const { count, rows } = await JobApplication.findAndCountAll({
+    where,
+    limit: Number(limit),
+    offset,
+    include: [
+      {
+        model: Candidate,
+        as: "candidate",
+        include: {
+          model: Profile,
+          as: "profile",
+          include: { model: User, as: "user", attributes: { exclude: ["password"] } },
+        },
+      },
+    ],
+    order: [["applied_at", "DESC"]],
+  });
+
+  res.status(200).json({
+    data: rows,
+    pagination: { total: count, page: Number(page), limit: Number(limit) },
+  });
+});
+
+// GET ALL APPLICATIONS FOR RECRUITER (across all their jobs)
+export const getAllApplicationsForRecruiter = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 100, status } = req.query;
+  const offset = (page - 1) * limit;
+
+  // Find all jobs posted by this recruiter
+  const recruiterJobs = await JobPosting.findAll({
+    where: { postedBy: req.user.id },
+    attributes: ["id"],
+  });
+
+  const jobIds = recruiterJobs.map((j) => j.id);
+
+  if (!jobIds.length) {
+    return res.status(200).json({
+      data: [],
+      pagination: { total: 0, page: Number(page), limit: Number(limit) },
+    });
+  }
+
+  const where = { job_id: jobIds };
+  if (status) where.status = status;
+
+  const { count, rows } = await JobApplication.findAndCountAll({
+    where,
+    limit: Number(limit),
+    offset,
+    include: [
+      { model: JobPosting, as: "job" },
+      {
+        model: Candidate,
+        as: "candidate",
+        include: {
+          model: Profile,
+          as: "profile",
+          include: {
+            model: User,
+            as: "user",
+            attributes: { exclude: ["password"] },
+          },
+        },
+      },
+    ],
+    order: [["applied_at", "DESC"]],
+  });
+
+  res.status(200).json({
+    data: rows,
+    pagination: { total: count, page: Number(page), limit: Number(limit) },
+  });
 });

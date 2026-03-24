@@ -55,3 +55,48 @@ export const getMatrixScoresByApplication = asyncHandler(async (req, res) => {
 
   res.json({ data: scores });
 });
+
+// Updated deleted
+// Update a matrix score
+export const updateMatrixScore = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { score, interview_note, stage_name } = req.body;
+
+  const matrixScore = await MatrixScore.findByPk(id);
+
+  if (!matrixScore) {
+    return res.status(404).json({ message: "Matrix score not found" });
+  }
+
+  // Validate score range if provided
+  if (score && (score < 1 || score > 5)) {
+    return res.status(400).json({ message: "Score must be between 1 and 5" });
+  }
+
+  await matrixScore.update({
+    score: score ?? matrixScore.score,
+    interview_note: interview_note ?? matrixScore.interview_note,
+    stage_name: stage_name ?? matrixScore.stage_name,
+  });
+
+  res.json({
+    message: "Matrix score updated",
+    data: matrixScore,
+  });
+});
+
+//delete matrix 
+// Delete a matrix score
+export const deleteMatrixScore = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const matrixScore = await MatrixScore.findByPk(id);
+
+  if (!matrixScore) {
+    return res.status(404).json({ message: "Matrix score not found" });
+  }
+
+  await matrixScore.destroy();
+
+  res.json({ message: "Matrix score deleted successfully" });
+});

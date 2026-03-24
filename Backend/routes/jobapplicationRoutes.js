@@ -17,7 +17,14 @@ router.post(
 
 router.get("/", authenticate, jobapplicationController.getApplications);
 
+// Updated Routes 
+router.get("/recruiter/all",authenticate, jobapplicationController.getAllApplicationsForRecruiter);
+
 router.get("/:id", authenticate, jobapplicationController.getApplicationById);
+
+// Updated Get Application by Job Posting 
+
+router.get("/job/:jobId", authenticate, jobapplicationController.getApplicationsByJob);
 
 router.put("/:id", authenticate, jobapplicationController.updateApplicationStatus);
 

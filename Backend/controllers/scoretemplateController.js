@@ -35,3 +35,38 @@ export const getActiveTemplate = asyncHandler(async (req, res) => {
   const template = await ScoreTemplate.findOne({ where: { is_active: true } });
   res.json({ data: template });
 });
+
+
+// Update Template 
+// Update template
+export const updateTemplate = asyncHandler(async (req, res) => {
+  const { templateId } = req.params;
+
+  const template = await ScoreTemplate.findByPk(templateId);
+
+  if (!template) {
+    return res.status(404).json({ message: "Template not found" });
+  }
+
+  await template.update(req.body);
+
+  res.json({
+    message: "Template updated",
+    data: template,
+  });
+});
+
+// Delete template
+export const deleteTemplate = asyncHandler(async (req, res) => {
+  const { templateId } = req.params;
+
+  const template = await ScoreTemplate.findByPk(templateId);
+
+  if (!template) {
+    return res.status(404).json({ message: "Template not found" });
+  }
+
+  await template.destroy();
+
+  res.json({ message: "Template deleted successfully" });
+});
