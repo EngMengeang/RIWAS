@@ -51,6 +51,8 @@ export default function RecruitmentWorkflow() {
   const [stages, setStages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [hasPendingOrderChanges, setHasPendingOrderChanges] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ show: false, msg: "", type: "success" });
   const [modal, setModal] = useState({ open: false, mode: "create", stage: null });
@@ -66,6 +68,7 @@ export default function RecruitmentWorkflow() {
     try {
       const data = await getWorkflowDefinitions();
       setStages([...(data || [])].sort((a, b) => a.order - b.order));
+      setHasPendingOrderChanges(false);
     } catch {
       setError("Unable to load stages. Please try again.");
     } finally {
@@ -130,15 +133,35 @@ export default function RecruitmentWorkflow() {
   const handleDelete = async (id) => {
     try {
       await deleteWorkflowDefinitionAPI(id);
-      setStages(prev => prev.filter(s => s.id !== id));
+
+      // Keep stage numbering contiguous after delete (1..N)
+      const remainingStages = stages
+        .filter((s) => s.id !== id)
+        .sort((a, b) => a.order - b.order)
+        .map((s, i) => ({ ...s, order: i + 1 }));
+
+      await Promise.all(
+        remainingStages.map((s) =>
+          updateWorkflowDefinitionAPI(s.id, {
+            name: s.name,
+            description: s.description,
+            order: s.order,
+            color: s.color,
+            is_active: s.is_active,
+          })
+        )
+      );
+
+      setStages(remainingStages);
+      setHasPendingOrderChanges(false);
       setDeleteConfirm(null);
-      showToast("Stage removed.");
+      showToast("Stage removed and steps renumbered.");
     } catch {
       showToast("Failed to delete stage.", "error");
     }
   };
 
-  const handleDrop = async (e, dropIndex) => {
+  const handleDrop = (e, dropIndex) => {
     e.preventDefault();
     if (dragging === null || dragging === dropIndex) {
       setDragging(null); setDragOver(null); return;
@@ -148,19 +171,37 @@ export default function RecruitmentWorkflow() {
     reordered.splice(dropIndex, 0, moved);
     const updated = reordered.map((s, i) => ({ ...s, order: i + 1 }));
     setStages(updated);
+    setHasPendingOrderChanges(true);
     setDragging(null);
     setDragOver(null);
+    showToast("Order updated. Click Save Workflow to apply changes.");
+  };
+
+  const saveWorkflowOrder = async () => {
+    if (!hasPendingOrderChanges) {
+      navigate("/profile-page");
+      return;
+    }
+    setSavingOrder(true);
     try {
-      await Promise.all(updated.map(s =>
-        updateWorkflowDefinitionAPI(s.id, {
-          name: s.name, description: s.description,
-          order: s.order, color: s.color, is_active: s.is_active
-        })
-      ));
-      showToast("Order saved.");
+      await Promise.all(
+        stages.map((s) =>
+          updateWorkflowDefinitionAPI(s.id, {
+            name: s.name,
+            description: s.description,
+            order: s.order,
+            color: s.color,
+            is_active: s.is_active,
+          })
+        )
+      );
+      setHasPendingOrderChanges(false);
+      navigate("/profile-page");
     } catch {
-      showToast("Failed to save order.", "error");
+      showToast("Failed to save workflow order.", "error");
       fetchStages();
+    } finally {
+      setSavingOrder(false);
     }
   };
 
@@ -179,16 +220,33 @@ export default function RecruitmentWorkflow() {
               <h1 className="text-2xl font-bold text-gray-900">Recruitment Workflow</h1>
               <div className="h-0.5 w-full bg-green-500 rounded mt-2" />
             </div>
-            <button
-              onClick={openCreate}
-              className="ml-6 flex items-center gap-2 h-10 px-5 rounded-xl text-sm text-white transition-all active:scale-95 shadow-sm hover:opacity-90 flex-shrink-0"
-              style={{ backgroundColor: "#1e293b", fontWeight: 500 }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/>
-              </svg>
-              Add Stage
-            </button>
+            <div className="ml-6 flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={saveWorkflowOrder}
+                disabled={savingOrder}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-sm text-white transition-all active:scale-95 shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: "#047857", fontWeight: 600 }}
+              >
+                {savingOrder ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {savingOrder ? "Saving..." : "Save Workflow"}
+              </button>
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 h-10 px-5 rounded-xl text-sm text-white transition-all active:scale-95 shadow-sm hover:opacity-90"
+                style={{ backgroundColor: "#1e293b", fontWeight: 500 }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Stage
+              </button>
+            </div>
           </div>
 
           {/* ── Toast ──────────────────────────────────────────────────────── */}
@@ -368,7 +426,7 @@ export default function RecruitmentWorkflow() {
                   </div>
                 ))}
                 <div className="px-6 py-2.5 text-center text-[11px] text-slate-300 border-t border-slate-50" style={{ fontWeight: 400 }}>
-                  Drag rows to reorder · Changes save automatically
+                  Drag rows to reorder · Click Save Workflow to apply order changes
                 </div>
               </div>
             )}
